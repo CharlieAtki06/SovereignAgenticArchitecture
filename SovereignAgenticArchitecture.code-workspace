@@ -1,8 +1,12 @@
 {
   "folders": [
     {
+      "name": "Root — Sovereign Agentic Architecture",
+      "path": "."
+    },
+    {
       "name": "Zone 1 — Edge Runtime",
-      "path": "../SovereignAgenticArchitectureZoneOne/SovereignAgenticArchitectureZoneOne"
+      "path": "../SovereignAgenticArchitectureZoneOne"
     },
     {
       "name": "Zone 2 — Governed Layer",
