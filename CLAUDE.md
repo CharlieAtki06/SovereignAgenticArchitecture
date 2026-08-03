@@ -1,0 +1,73 @@
+# CLAUDE.md — Sovereign Agentic Architecture (Root)
+
+This is the root envelope for a three-zone agentic architecture designed for enterprise AI with deterministic governance. It holds the VS Code multi-root workspace, cross-zone documentation, and onboarding tooling. The zone source code lives in separate repositories.
+
+---
+
+## The three zones
+
+**Zone 1 — Edge Runtime** (`SovereignAgenticArchitectureZoneOne`)
+Local function-calling model + LangGraph + MCP client. Discovers what Zone 2 exposes, invokes it through a governed MCP channel, and presents results through a sandboxed Flutter shell. Cannot access enterprise systems or Zone 3 directly.
+
+**Zone 2 — Governed Mediation** (`SovereignAgenticArchitectureZoneTwo`)
+The gatekeeper. Authenticates callers, evaluates policy deterministically, records every decision to an immutable audit log, executes the appropriate enterprise connector, and strips responses to only permitted fields. Not a reasoning agent — a governance runtime.
+
+**Zone 3 — Reasoning Model + Enterprise Sources**
+Large reasoning LLM and enterprise data sources (FHIR, SQL, third-party APIs). Only reachable through Zone 2's connector boundary. Never directly from Zone 1.
+
+---
+
+## The boundary that must never be crossed
+
+Zone 1 consumes Zone 2 exclusively through Zone 2's published MCP interface. This is enforced as an architecture rule, not a convention.
+
+Zone 1 must never:
+- Import Zone 2 source code
+- Call Zone 2 internal Python functions directly
+- Reproduce Zone 2 policy logic locally
+- Access Zone 3 or enterprise systems without going through Zone 2
+
+Any task that appears to require crossing this boundary is a signal that something is being added to the wrong zone.
+
+---
+
+## Working across zones
+
+When a task crosses the Zone 1 / Zone 2 boundary, reference both repos explicitly:
+
+```
+Zone 1 is in:
+#Zone 1 — Edge Runtime
+
+Zone 2 is in:
+#Zone 2 — Governed Layer
+```
+
+Changes to the MCP interface must be coordinated: Zone 2 (server side) merged first, Zone 1 (client side) second.
+
+---
+
+## Repository locations (relative to this file)
+
+| Zone | Local path |
+|---|---|
+| Zone 1 | `../SovereignAgenticArchitectureZoneOne/SovereignAgenticArchitectureZoneOne` |
+| Zone 2 | `../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo` |
+
+---
+
+## Cross-zone ADRs
+
+Architecture decisions governing the boundary between zones live in `docs/adr/` in this repo. Zone-internal decisions live in each zone's own `docs/adr/`.
+
+---
+
+## What belongs in this repo
+
+- `SovereignAgenticArchitecture.code-workspace` — the VS Code multi-root workspace
+- `setup.sh` — bootstrap script to clone both zones
+- `docs/adr/` — cross-zone architecture decisions
+- `CONTRIBUTING.md` — cross-boundary development workflow
+- `CLAUDE.md` — this file
+
+Do not add zone source code, zone-specific configuration, or zone-internal docs here.

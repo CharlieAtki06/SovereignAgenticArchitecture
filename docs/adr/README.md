@@ -1,0 +1,8 @@
+# Cross-Zone Architecture Decision Records
+
+These ADRs govern decisions that span both Zone 1 and Zone 2, or that define the boundary between them. Zone-internal decisions live in each zone's own `docs/adr/` directory.
+
+| ADR | Title | Status |
+|---|---|---|
+| [0001](0001-separate-repositories-per-zone.md) | Separate repositories per zone | Accepted |
+| [0002](0002-mcp-as-zone-boundary-transport.md) | MCP as the Zone 1 → Zone 2 transport boundary | Accepted |

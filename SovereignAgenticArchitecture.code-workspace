@@ -1,0 +1,35 @@
+{
+  "folders": [
+    {
+      "name": "Zone 1 — Edge Runtime",
+      "path": "../SovereignAgenticArchitectureZoneOne/SovereignAgenticArchitectureZoneOne"
+    },
+    {
+      "name": "Zone 2 — Governed Layer",
+      "path": "../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/.venv": true,
+      "**/.mypy_cache": true,
+      "**/.ruff_cache": true,
+      "**/.pytest_cache": true,
+      "**/.import_linter_cache": true
+    },
+    "search.exclude": {
+      "**/__pycache__": true,
+      "**/.venv": true,
+      "**/*.lock": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.pylance",
+      "charliermarsh.ruff",
+      "ms-python.mypy-type-checker"
+    ]
+  }
+}
