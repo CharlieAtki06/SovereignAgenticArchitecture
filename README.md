@@ -108,31 +108,36 @@ make dev       # API on http://localhost:8000
 
 `make up` brings up the whole stack — shared infra (Postgres, Redis, Keycloak),
 Zone 2 (governed, **real OIDC auth**), the mock FHIR backend, and the containerised
-Zone 1 edge. The full system spans two compose projects: Zone 2 (its own repo) and
-the Zone 1 edge (this repo's `docker-compose.yml`, an overlay that joins Zone 2's
-`sovereign-zone2` network). `make up` sequences them — Zone 2 first (it creates the
-network), then the edge on top.
+Zone 1 edge. **Each zone owns its own `Dockerfile` + `docker-compose.yml`** (Zone 2:
+the governed stack; Zone 1: the edge). This root holds **no** compose — just the
+`Makefile` orchestrator + the shared `.env`. `make up` sequences them: Zone 2 first
+(it creates the `sovereign-zone2` network), then the Zone 1 edge, which joins it.
 
 ```bash
 ./setup.sh                 # clone both zones side-by-side (first time)
+cp .env.example .env       # optional — override secrets/knobs (defaults work as-is)
 # start an Ollama server on the host with the edge model, then:
-make up                    # from this repo root — brings up both projects
+make up                    # from this repo root — brings up both zones
 # drive it from the host (real Keycloak user token → governed Zone 2 access):
 cd ../SovereignAgenticArchitectureZoneOne
-uv run zone1 chat --as-user clinician-a --secret dev-secret
+uv run zone1 chat --login --secret dev-secret
 ```
 
-Requires a host Ollama (the model runtime is not containerised —
-`ZONE1_MODEL_ENDPOINT` points at it). `--secret` is the edge host's local
-transport secret (`X-Host-Secret`), **not** the identity credential — identity is
-the Keycloak OIDC token the CLI registers via `--as-user`.
+The single root `.env` configures the whole `make up` (both zones' composes
+interpolate from it). Requires a host Ollama (the model runtime is not
+containerised — `ZONE1_MODEL_ENDPOINT` points at it). `--secret` is the edge host's
+local transport secret (`X-Host-Secret`), **not** the identity credential — identity
+is the Keycloak OIDC token the CLI registers via `--login`.
 
-> **Why `make up` and not a single `podman compose up`?** The natural one-command
-> form would be a root compose that `include:`s Zone 2's, but podman-compose does
-> not rebase relative paths from `include:`d files (Zone 2's Keycloak realm mount
-> and build contexts break). The overlay-plus-`make` approach sidesteps that and
-> leaves each zone's compose standing alone for zone-local development. Under
-> Docker Compose native, `include:` rebasing works if you prefer that route.
+> **Why `make up` and not a single `podman compose up`?** A single root compose
+> that `include:`s the zones would be ideal, but podman-compose doesn't rebase
+> relative paths from `include:`d files (Zone 2's realm mount + build contexts
+> break). So each zone runs from its own compose and `make up` sequences the two —
+> each zone's compose also stands alone for zone-local development. (Under Docker
+> Compose native, `include:` works if you prefer a single file.)
+
+Individual zones: `make zone2-up` / `make zone1-up` (the edge needs Zone 2's
+network to exist first); `make down`, `make logs`, `make edge-logs`.
 
 ### Running Zone 1 locally (against a local Zone 2)
 
