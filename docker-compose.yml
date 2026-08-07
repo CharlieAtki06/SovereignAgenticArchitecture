@@ -1,28 +1,25 @@
-# Sovereign Agentic Architecture — full-system stack (cross-zone).
+# Sovereign Agentic Architecture — cross-zone edge overlay.
 #
-# This is the ONLY compose that brings up both zones together; it lives in the
-# root envelope because it is inherently cross-zone (alongside setup.sh). It
-# REUSES Zone 2's own compose via `include` (no duplication) and adds the Zone 1
-# edge runtime on top. Each zone's own compose still stands alone for zone-local
-# development.
+# This compose adds the Zone 1 edge runtime ON TOP of an already-running Zone 2
+# stack. It lives in the root envelope because wiring Zone 1 to Zone 2 is
+# inherently cross-zone (alongside setup.sh).
 #
-#   podman compose up -d        # postgres, redis, keycloak, zone2 (OIDC) + worker,
-#                               # mock-fhir, and the zone1 edge
+# Why an overlay and not `include:` of Zone 2's compose?
+#   podman-compose (the provider `podman compose` shells out to) does NOT rebase
+#   relative paths from an `include:`d file to that file's directory — so Zone 2's
+#   own bind mounts / build contexts resolve against THIS directory and break
+#   (the Keycloak realm mount silently becomes an empty dir). Rather than fight
+#   that, the edge joins Zone 2's network as `external` and Zone 2 is brought up
+#   from its own repo first. `make up` sequences the two; see the root Makefile.
+#   (Under Docker Compose native, `include:` rebasing works — but this repo
+#   targets the podman toolchain in use here.)
 #
-# Requirements:
-#   - the two zone repos cloned side-by-side (run ./setup.sh)
-#   - a compose implementation that supports `include` (Docker Compose v2.20+,
-#     recent podman-compose)
-#   - an Ollama server on the host serving the edge model (see ZONE1_MODEL_ENDPOINT)
+# Bring the whole thing up with:   make up      (from this repo root)
+# Then drive it from the host:     cd ../SovereignAgenticArchitectureZoneOne \
+#                                    && uv run zone1 chat --as-user clinician-a --secret dev-secret
 #
-# Auth is real end-to-end: the edge carries a Keycloak-issued user token to Zone 2
-# via the secure-handle flow. Drive it with the CLI:
-#   uv run zone1 chat --as-user clinician-a   (host secret: dev-secret)
-
-include:
-  # Zone 2's canonical stack: postgres, redis, keycloak, migrate, api (OIDC),
-  # worker, mock-fhir. Paths are relative to this file (see setup.sh layout).
-  - ../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docker-compose.yml
+# Requires: both zone repos cloned side-by-side (./setup.sh), and a host Ollama
+# serving the edge model (the model runtime is not containerised).
 
 services:
   # Zone 1 edge runtime — the sidecar host. Consumes Zone 2 exclusively over MCP.
@@ -43,12 +40,23 @@ services:
       ZONE1_MODEL_ENDPOINT: http://host.containers.internal:11434
       ZONE1_ORCHESTRATOR_PROVIDER: langgraph
       ZONE1_CAPABILITY_SERVER_PROVIDER: mcp
-      # Zone 2's governed MCP surface, in-network (the `api` service from Zone 2's compose).
+      # Zone 2's governed MCP surface, in-network (the `api` service on the
+      # shared `sovereign-zone2` network).
       ZONE1_CAPABILITY_SERVER_URL: http://api:8000/mcp
       # Carry a real user token to Zone 2 via the opaque-handle flow (§10.4 / ADR-0018).
       ZONE1_CREDENTIAL_PROVIDER: secure_handle
+      # Local transport access control (X-Host-Secret) — NOT identity auth. The
+      # identity token is a Keycloak OIDC JWT the CLI registers via --as-user.
       ZONE1_HOST_SECRET: dev-secret
-    depends_on:
-      api:
-        condition: service_healthy
+    # Zone 2 lives in a SEPARATE compose project; cross-project depends_on is not
+    # possible, so the edge tolerates api-not-ready and retries on restart.
     restart: unless-stopped
+    networks:
+      - zone2
+
+networks:
+  # Zone 2's pinned default network. Must already exist — `make up` brings Zone 2
+  # up first (which creates it).
+  zone2:
+    name: sovereign-zone2
+    external: true

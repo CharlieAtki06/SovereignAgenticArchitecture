@@ -59,7 +59,7 @@ Each zone enforces its own quality gates. Before raising a PR in either zone, ru
 make quality   # lint + typecheck + architecture + full test suite
 ```
 
-**Zone 1** (once implemented):
+**Zone 1:**
 ```bash
 make quality
 ```
