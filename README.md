@@ -104,9 +104,30 @@ make migrate
 make dev       # API on http://localhost:8000
 ```
 
+### Running the full system (both zones)
+
+The root `docker-compose.yml` brings up the whole stack — shared infra
+(Postgres, Redis, Keycloak), Zone 2 (governed, **real OIDC auth**), the mock FHIR
+backend, and the Zone 1 edge — in one command. It reuses Zone 2's own compose via
+`include` (no duplication) and adds the edge on top.
+
+```bash
+./setup.sh                 # clone both zones side-by-side (first time)
+# start an Ollama server on the host with the edge model, then:
+podman compose up -d       # from this repo root
+# drive it (real Keycloak user token → governed Zone 2 access):
+#   cd ../SovereignAgenticArchitectureZoneOne && uv run zone1 chat --as-user clinician-a
+```
+
+Requires a compose implementation with `include` support and a host Ollama (the
+model runtime is not containerised — `ZONE1_MODEL_ENDPOINT` points at it). Each
+zone's own `docker-compose.yml` still stands alone for zone-local development.
+
 ### Running Zone 1 locally (against a local Zone 2)
 
-> Zone 1 implementation is not yet started. See [Zone 1 implementation status](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/main/docs/implementation-status.md).
+Run Zone 2's stack (`podman compose up -d` in the Zone 2 repo — OIDC by default),
+start a host Ollama, then run the edge host with `ZONE1_*` env (see
+`zone1.bootstrap.settings`) or the `zone1 chat` CLI.
 
 ---
 

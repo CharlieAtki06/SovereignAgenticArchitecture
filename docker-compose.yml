@@ -1,0 +1,54 @@
+# Sovereign Agentic Architecture — full-system stack (cross-zone).
+#
+# This is the ONLY compose that brings up both zones together; it lives in the
+# root envelope because it is inherently cross-zone (alongside setup.sh). It
+# REUSES Zone 2's own compose via `include` (no duplication) and adds the Zone 1
+# edge runtime on top. Each zone's own compose still stands alone for zone-local
+# development.
+#
+#   podman compose up -d        # postgres, redis, keycloak, zone2 (OIDC) + worker,
+#                               # mock-fhir, and the zone1 edge
+#
+# Requirements:
+#   - the two zone repos cloned side-by-side (run ./setup.sh)
+#   - a compose implementation that supports `include` (Docker Compose v2.20+,
+#     recent podman-compose)
+#   - an Ollama server on the host serving the edge model (see ZONE1_MODEL_ENDPOINT)
+#
+# Auth is real end-to-end: the edge carries a Keycloak-issued user token to Zone 2
+# via the secure-handle flow. Drive it with the CLI:
+#   uv run zone1 chat --as-user clinician-a   (host secret: dev-secret)
+
+include:
+  # Zone 2's canonical stack: postgres, redis, keycloak, migrate, api (OIDC),
+  # worker, mock-fhir. Paths are relative to this file (see setup.sh layout).
+  - ../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docker-compose.yml
+
+services:
+  # Zone 1 edge runtime — the sidecar host. Consumes Zone 2 exclusively over MCP.
+  zone1-edge:
+    build:
+      context: ../SovereignAgenticArchitectureZoneOne
+    image: sovereign-zone1:local
+    ports:
+      - "8090:8090"
+    environment:
+      # STANDARD profile → the settings validator requires real providers
+      # (no fake auth / no fake gateway): "always use proper auth".
+      ZONE1_PROFILE: standard
+      ZONE1_LOG_LEVEL: INFO
+      ZONE1_MODEL_PROVIDER: ollama
+      ZONE1_MODEL: gemma4:e4b-it-q4_K_M
+      # Reach the host's Ollama (the model runtime is not containerised).
+      ZONE1_MODEL_ENDPOINT: http://host.containers.internal:11434
+      ZONE1_ORCHESTRATOR_PROVIDER: langgraph
+      ZONE1_CAPABILITY_SERVER_PROVIDER: mcp
+      # Zone 2's governed MCP surface, in-network (the `api` service from Zone 2's compose).
+      ZONE1_CAPABILITY_SERVER_URL: http://api:8000/mcp
+      # Carry a real user token to Zone 2 via the opaque-handle flow (§10.4 / ADR-0018).
+      ZONE1_CREDENTIAL_PROVIDER: secure_handle
+      ZONE1_HOST_SECRET: dev-secret
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
