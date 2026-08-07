@@ -1,3 +1,9 @@
 .DS_Store
 .idea/
 .vscode/
+
+# Local env / secrets — the operational config for `make up`. Never commit;
+# only `.env.example` is tracked.
+.env
+.env.*
+!.env.example

@@ -30,12 +30,16 @@ services:
     ports:
       - "8090:8090"
     environment:
-      # STANDARD profile → the settings validator requires real providers
-      # (no fake auth / no fake gateway): "always use proper auth".
+      # Secrets + commonly-overridden knobs derive from the ROOT `.env` (podman-
+      # compose interpolates from the dir you run `make up` in — the root — so the
+      # single root `.env` feeds both this overlay and Zone 2's compose). Defaults
+      # keep `make up` zero-config. In-network wiring (the `api` service URL, the
+      # host-Ollama address) stays inline — it's topology, not user config.
+      # STANDARD profile → the settings validator requires real providers.
       ZONE1_PROFILE: standard
-      ZONE1_LOG_LEVEL: INFO
+      ZONE1_LOG_LEVEL: ${ZONE1_LOG_LEVEL:-INFO}
       ZONE1_MODEL_PROVIDER: ollama
-      ZONE1_MODEL: gemma4:e4b-it-q4_K_M
+      ZONE1_MODEL: ${ZONE1_MODEL:-gemma4:e4b-it-q4_K_M}
       # Reach the host's Ollama (the model runtime is not containerised).
       ZONE1_MODEL_ENDPOINT: http://host.containers.internal:11434
       ZONE1_ORCHESTRATOR_PROVIDER: langgraph
@@ -45,9 +49,8 @@ services:
       ZONE1_CAPABILITY_SERVER_URL: http://api:8000/mcp
       # Carry a real user token to Zone 2 via the opaque-handle flow (§10.4 / ADR-0018).
       ZONE1_CREDENTIAL_PROVIDER: secure_handle
-      # Local transport access control (X-Host-Secret) — NOT identity auth. The
-      # identity token is a Keycloak OIDC JWT the CLI registers via --as-user.
-      ZONE1_HOST_SECRET: dev-secret
+      # Local transport access control (X-Host-Secret) — NOT identity auth. A secret.
+      ZONE1_HOST_SECRET: ${ZONE1_HOST_SECRET:-dev-secret}
     # Zone 2 lives in a SEPARATE compose project; cross-project depends_on is not
     # possible, so the edge tolerates api-not-ready and retries on restart.
     restart: unless-stopped
