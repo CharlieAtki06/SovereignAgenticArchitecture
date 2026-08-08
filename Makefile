@@ -21,7 +21,7 @@ ZONE2_DIR := ../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneT
 ZONE1 := $(COMPOSE) -f $(ZONE1_DIR)/docker-compose.yml
 ZONE2 := $(COMPOSE) -f $(ZONE2_DIR)/docker-compose.yml
 
-.PHONY: help up down ps logs edge-logs zone1-up zone1-down zone2-up zone2-down
+.PHONY: help up down ps logs edge-logs zone1-up zone1-down zone1-rebuild zone2-up zone2-down
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -35,13 +35,25 @@ up: ## Bring up the full system (Zone 2 stack, then the Zone 1 edge on its netwo
 
 down: ## Tear down the edge, then the Zone 2 stack
 	-$(ZONE1) down
-	$(ZONE2) down
+	-$(ZONE2) down --remove-orphans
+	@$(CONTAINER_ENGINE) network rm -f sovereign-zone2 2>/dev/null; true
 
 zone1-up: ## Bring up only the Zone 1 edge (needs Zone 2's network to exist)
 	$(ZONE1) up -d
 
 zone1-down: ## Tear down only the Zone 1 edge
 	$(ZONE1) down
+
+zone1-rebuild: ## Rebuild Zone 1 image and restart (Zone 2 must be running — run `make zone2-up` first if not)
+	@ZONE2_NET=$${ZONE2_NETWORK:-sovereign-zone2}; \
+	if ! $(CONTAINER_ENGINE) network exists $$ZONE2_NET 2>/dev/null; then \
+		echo "Error: Zone 2 network '$$ZONE2_NET' not found."; \
+		echo "       Run 'make zone2-up' first, then retry."; \
+		exit 1; \
+	fi
+	$(ZONE1) down
+	$(ZONE1) build zone1-edge
+	$(ZONE1) up -d
 
 zone2-up: ## Bring up only the Zone 2 stack
 	$(ZONE2) up -d
