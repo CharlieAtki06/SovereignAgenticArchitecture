@@ -31,13 +31,15 @@ There are **two independent boundaries** — don't conflate them:
   registered once and only an opaque handle travels thereafter — it never reaches the model, tool
   arguments, logs, or the wire.
 
-Zone 2 governs each call on **three orthogonal axes**:
+Zone 2 governs each call on **five orthogonal axes**:
 
 | Axis | Question | Source | Example denial |
 |---|---|---|---|
 | **roles** | *what operations?* | `realm_access.roles` claim + capability's `required_roles` | `role_not_permitted` |
 | **purpose** | *why? (lawful basis)* | `purpose` claim + capability's `permitted_purposes` | `purpose_not_permitted` |
-| **entitlement** | *which subjects?* | `practitioner_id` claim → FHIR `CareTeam` lookup → allowed subjects | `subject_out_of_scope` |
+| **entitlement** | *which subjects?* | `practitioner_id` claim → enterprise lookup → allowed subjects | `subject_out_of_scope` |
+| **zone identity** | *which zone?* | `caller_zone` JWT claim → `ExecutionContext.caller_zone` | (drives field stripping, not denial) |
+| **field disclosure** | *which fields?* | `caller_zone==ZONE3` → `zone3_permitted_output_fields`; `ZONE1` → `role_field_policies` | (LIMIT_FIELDS obligation strips silently) |
 
 ---
 
@@ -52,7 +54,8 @@ Zone 2 governs each call on **three orthogonal axes**:
   - **Direct Access Grants (password/ROPC)** — the dev-only shortcut (`zone1 chat --as-user`),
   - loopback redirect URIs including `http://127.0.0.1:8250/callback`.
 - **Claims** the token carries (into the **access** token): `sub`, `realm_access.roles`, `purpose`,
-  `practitioner_id` (or `subject_id`), and `aud = zone2-mcp` (Zone 2's audience).
+  `practitioner_id` (or `subject_id`), `aud = zone2-mcp` (Zone 2's audience), and
+  **`caller_zone: "zone1"`** (hardcoded via a protocol mapper — see §8 below).
 - **Issuer / JWKS split:** issuer is `http://localhost:8080/realms/sovereign` (stable via
   `KC_HOSTNAME`); Zone 2 fetches signing keys in-network from `http://keycloak:8080/...`. This is
   why a browser/CLI on your host and a containerised Zone 2 agree on the token.
@@ -88,8 +91,8 @@ All three require **purpose `direct_care`** and a **subject you're entitled to**
 
 | Tool | What it does | Notes |
 |---|---|---|
-| `appointments.list(subject_id)` | List a patient's appointments (summary per item) | **Returns a list** — each item is field-limited by governance (`patient_reference` stripped per item) |
-| `appointments.get_details(subject_id, appointment_id)` | One appointment's detail + preparation | `appointment_id` can be any string (mock returns canned data) |
+| `appointments.list(subject_id)` | List a patient's appointments | **Returns a list.** Zone 1 callers receive all fields including `patient_reference`. Zone 3 LLM sub-calls have `patient_reference` stripped (not in `zone3_permitted_output_fields`). |
+| `appointments.get_details(subject_id, appointment_id)` | One appointment's detail + preparation | `appointment_id` can be any string (mock returns canned data). Zone 1 gets full record; Zone 3 gets stripped record. |
 | `appointments.book(subject_id, date, reason)` | **Book** an appointment | **Write + HITL**: requires human confirmation before it runs; audited |
 
 `demo.get_profile` belongs to a different module and is **not** granted to clinicians (useful for seeing
@@ -163,8 +166,8 @@ can switch users.)
 
 | Logged in as | Prompt | Expected result | Why |
 |---|---|---|---|
-| clinician-a | `list … subject_id patient-1` | ✅ **allowed** — list of appointments (`patient_reference` stripped from every item) | in scope + `direct_care` |
-| clinician-a | `get_details … subject_id patient-2` | ✅ **allowed** — status/start/location/preparation | also in scope |
+| clinician-a | `list … subject_id patient-1` | ✅ **allowed** — full appointment list including `patient_reference` | Zone 1 trusted caller; no zone3 stripping applies |
+| clinician-a | `get_details … subject_id patient-2` | ✅ **allowed** — full record: status/start/location/preparation/patient_reference | also in scope; Zone 1 sees all governed fields |
 | clinician-a | `book … subject_id patient-1 …` | ⚠️ **confirmation prompt** → approve → ✅ booked (audited); decline → `CONFIRMATION_DECLINED` | HITL write, entitlement-scoped |
 | clinician-a | any `… subject_id patient-3` | ✗ **`subject_out_of_scope`** | patient-3 is clinician-b's |
 | clinician-a | `… subject_id josh` / unknown | ✗ **`subject_out_of_scope`** | not an entitled subject |
@@ -181,7 +184,84 @@ Every decision (allow or deny) is written to Zone 2's immutable **audit log**.
 
 ---
 
-## 7. Other ways to test
+## 7. Zone identity & field governance — what flows where
+
+### Zone 1 → Zone 2 (the standard path)
+
+```
+Zone 1 edge                Zone 2
+─────────────────────────────────────────────────────
+JWT with caller_zone:zone1 ──►  OidcIdentityResolver
+                                  → ExecutionContext.caller_zone = ZONE1
+                                DeterministicPolicyEvaluator
+                                  ZONE1 + no role_field_policies → full governed result
+                                  ZONE1 + role_field_policies    → role-union field allowlist
+                                ExecuteRequestHandler applies LIMIT_FIELDS if emitted
+                                MCP tool result:
+                                  structured_content = governed data envelope
+                                  meta['zone2/app_overlay'] = Prefab UI tree
+```
+
+Zone 1 receives the **full governed result** from every connector unless the capability
+declares `role_field_policies` — in which case only the fields permitted by the caller's
+roles are returned.
+
+### Zone 1 → Zone 2 → Zone 3 (reasoning path)
+
+```
+Zone 1 edge         Zone 2                           Zone 3 cloud LLM
+────────────────────────────────────────────────────────────────────────
+Call zone_3_accessible cap ──► AcceptRequest (evaluated as Zone 1)
+                                Zone3ReasoningConnector:
+                                  builds zone3_ctx (caller_zone=ZONE3)
+                                  builds zone3_obligation from zone3_permitted_output_fields
+                                  ┌─ ReAct loop ───────────────────────────────────────┐
+                                  │  prompt: capability name + opaque parameters  ──►  │
+                                  │  tool result: field-stripped connector data    ◄──  │
+                                  └───────────────────────────────────────────────────┘
+                                  LLM synthesizes answer from stripped data only
+                               ◄── final answer returned to Zone 1
+```
+
+**What Zone 3 receives:**
+
+| What | Contains PII? | Protection |
+|---|---|---|
+| System prompt | No | Generic governance instruction |
+| Task prompt | Parameters only — must be opaque IDs | ⚠ Design invariant (see below) |
+| Tool results | **No** — field-stripped to `zone3_permitted_output_fields` | ✅ Technical enforcement |
+
+**⚠ Zone 3 parameter governance invariant**
+
+Input parameters are passed verbatim to the cloud LLM prompt. A `zone_3_accessible`
+capability must only accept **opaque identifiers** (e.g. `subject_id: "patient-1"`) — never
+freeform text, patient names, dates-with-context, or any value that itself constitutes PHI or PII.
+The entitlement system (subject scope) ensures Zone 1 can only pass subject IDs it is authorised
+to access — so the parameter is a meaningful but opaque handle — not the data it resolves to.
+
+There is currently **no code-level enforcement** of this invariant. It is a capability-author
+responsibility governed by design review and documented in ADR-0026 §7. A future ADR will
+add an `input_classification` field to the capability schema to make this machine-verifiable.
+
+### `caller_zone` — the trust signal
+
+The `caller_zone: "zone1"` claim is hardcoded into every token issued by the `zone1-edge`
+Keycloak client via an `oidc-hardcoded-claim-mapper` in `realm-export.json`.  Zone 1 never
+needs to set it explicitly.  A missing or unknown value defaults to `ZONE3` (fail-closed).
+
+To confirm the claim is present, decode an access token:
+
+```bash
+TOKEN=$(curl -s http://localhost:8080/realms/sovereign/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=zone1-edge \
+  -d username=clinician-a -d password=password | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+python3 -c 'import sys,base64,json; p=sys.argv[1].split(".")[1]; print(json.dumps(json.loads(base64.urlsafe_b64decode(p+"==")),indent=2))' "$TOKEN" | grep caller_zone
+# → "caller_zone": "zone1"
+```
+
+---
+
+## 9. Other ways to test
 
 - **Fetch a token directly (no CLI)** — dev password grant, then decode its claims:
   ```bash
@@ -201,7 +281,7 @@ Every decision (allow or deny) is written to Zone 2's immutable **audit log**.
 
 ---
 
-## 8. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
@@ -214,7 +294,7 @@ Every decision (allow or deny) is written to Zone 2's immutable **audit log**.
 
 ---
 
-## 9. Not production
+## 11. Not production
 
 This setup is for local testing and demos. For production you would:
 
