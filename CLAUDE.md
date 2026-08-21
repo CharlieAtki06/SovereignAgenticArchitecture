@@ -7,7 +7,7 @@ This is the root envelope for a three-zone agentic architecture designed for ent
 ## The three zones
 
 **Zone 1 — Edge Runtime** (`SovereignAgenticArchitectureZoneOne`)
-Local function-calling model + LangGraph + MCP client. Discovers what Zone 2 exposes, invokes it through a governed MCP channel, and presents results through a sandboxed Flutter shell. Cannot access enterprise systems or Zone 3 directly.
+Local function-calling model + LangGraph + MCP client. Discovers what Zone 2 exposes, invokes it through a governed MCP channel, and presents results through a sandboxed Tauri (Rust + React) desktop shell, or a native mobile client. Cannot access enterprise systems or Zone 3 directly.
 
 **Zone 2 — Governed Mediation** (`SovereignAgenticArchitectureZoneTwo`)
 The gatekeeper. Authenticates callers, evaluates policy deterministically, records every decision to an immutable audit log, executes the appropriate enterprise connector, and strips responses to only permitted fields. Not a reasoning agent — a governance runtime.

@@ -30,7 +30,7 @@ flowchart LR
     User(("User"))
 
     subgraph Z1["Zone 1 — Edge Runtime"]
-        Wrapper["Client wrapper\nFlutter shell"]
+        Wrapper["Client wrapper\nTauri desktop / native mobile"]
         Runtime["Edge runtime\nlocal model · LangGraph · MCP client"]
         Wrapper -. "EdgeRuntime facade" .-> Runtime
     end
@@ -56,7 +56,7 @@ This architecture spans three repositories:
 | Repository | Purpose |
 |---|---|
 | [SovereignAgenticArchitecture](https://github.com/CharlieAtki06/SovereignAgenticArchitecture) | This repo. VS Code workspace, cross-zone docs, onboarding. |
-| [SovereignAgenticArchitectureZoneOne](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne) | Edge runtime: local model, LangGraph, MCP client, Flutter shell. |
+| [SovereignAgenticArchitectureZoneOne](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne) | Edge runtime: local model, LangGraph, MCP client, Tauri desktop shell, native mobile (planned). |
 | [SovereignAgenticArchitectureZoneTwo](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo) | Governed mediation: policy engine, audit, connectors, MCP server. |
 
 Each zone retains its own `.git`, CI pipeline, dependencies, and releases. This is not a monorepo.
@@ -70,7 +70,6 @@ Each zone retains its own `.git`, CI pipeline, dependencies, and releases. This 
 - Git
 - [uv](https://docs.astral.sh/uv/) (Zone 2 Python toolchain)
 - Docker or Podman (Zone 2 infrastructure)
-- Flutter SDK (Zone 1 client shell, optional)
 
 ### Setup
 

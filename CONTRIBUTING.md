@@ -7,7 +7,7 @@ This architecture spans three repositories. Each has independent CI, dependencie
 | Repo | What changes here |
 |---|---|
 | `SovereignAgenticArchitecture` (this repo) | Workspace file, cross-zone docs, ADRs, onboarding |
-| `SovereignAgenticArchitectureZoneOne` | Edge runtime, LangGraph orchestration, Flutter shell, MCP client |
+| `SovereignAgenticArchitectureZoneOne` | Edge runtime, LangGraph orchestration, Tauri desktop shell, MCP client |
 | `SovereignAgenticArchitectureZoneTwo` | Policy engine, audit, connectors, MCP server, Zone 3 integration |
 
 ---
