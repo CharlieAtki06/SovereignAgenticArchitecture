@@ -8,11 +8,34 @@ Cross-references:
 
 ---
 
+## Contents
+
+1. [What problem this solves](#1-what-problem-this-solves)
+2. [Three-zone call map](#2-three-zone-call-map)
+3. [FastMCP Apps — Zone 2 overlay builder](#3-fastmcp-apps--zone-2-overlay-builder)
+4. [The governed result envelope](#4-the-governed-result-envelope)
+5. [Zone 1 rendering pipeline](#5-zone-1-rendering-pipeline)
+6. [The sandboxed iframe](#6-the-sandboxed-iframe)
+7. [Two-layer postMessage protocol](#7-two-layer-postmessage-protocol)
+8. [The toolCall bridge — full call flow](#8-the-toolcall-bridge--full-call-flow)
+9. [App instance lifecycle](#9-app-instance-lifecycle)
+10. [`app_session_id` — full lifecycle](#10-app_session_id--full-lifecycle)
+11. [Sidecar endpoints](#11-sidecar-endpoints)
+12. [Tauri commands](#12-tauri-commands)
+13. [`RuntimeTransport` — the abstraction boundary](#13-runtimetransport--the-abstraction-boundary)
+14. [Adding a new capability with an overlay](#14-adding-a-new-capability-with-an-overlay)
+15. [When to escalate beyond sandboxed iframe](#15-when-to-escalate-beyond-sandboxed-iframe)
+16. [TUI fallback](#16-tui-fallback)
+17. [Version pinning](#17-version-pinning)
+18. [File index](#file-index)
+
+---
+
 ## 1. What problem this solves
 
-Zone 2 capabilities return governed data (appointments, records, search results). A plain text response works for the model, but a human user benefits from a structured visual — paginated lists, detail cards, booking confirmations. Zone 1's desktop must render these views **without knowing what they contain**.
+Zone 2 capabilities return governed data (records, search results, paginated lists). A plain text response works for the model, but a human user benefits from a structured visual. Zone 1's desktop must render these views **without knowing what they contain**.
 
-The constraint is strict: Zone 1 must not import Zone 2 source code, reproduce Zone 2 domain vocabulary, or contain `case "AppointmentCard"` anywhere. A new Zone 2 capability with a completely different visual layout must require **zero Zone 1 code changes**.
+The constraint is strict: Zone 1 must not import Zone 2 source code, reproduce Zone 2 domain vocabulary, or contain any capability-specific rendering logic. A new Zone 2 capability with a completely different visual layout must require **zero Zone 1 code changes**.
 
 The solution is two layered systems:
 
@@ -23,49 +46,40 @@ The solution is two layered systems:
 
 ## 2. Three-zone call map
 
+There are two distinct paths through the system — the model-driven initial call and the direct widget toolCall bridge:
+
+```mermaid
+flowchart TD
+    User([User]) --> Desktop[Tauri Desktop\nReact shell]
+
+    subgraph Z1["Zone 1 — Edge Runtime"]
+        Desktop --> |"POST /v1/interaction\n(model-driven path)"| HI[HandleInteraction]
+        Desktop --> |"POST /v1/capability/invoke\n(toolCall bridge)"| IC[InvokeCapability]
+
+        HI --> LG[LangGraph Orchestrator]
+        LG --> Model[Local Model]
+        Model --> |tools/call| LG
+        LG --> GW[GovernedCapabilityGateway\nMCP client]
+
+        IC --> GW
+
+        GW --> |MCP| Z2_Border[ ]
+    end
+
+    subgraph Z2["Zone 2 — Governed Mediation"]
+        Z2_Border --> Handler["_build_capability_handler\nauthn → policy → run → strip → PrefabApp"]
+        Handler --> AppSession[(AppInteractionSession\nRedis)]
+        Handler --> |connector boundary| Z3[Zone 3\nEnterprise sources]
+    end
+
+    Handler --> |ToolResult\nstructured_content + _meta| GW
+    GW --> |"app_overlay + app_session_id\nextracted from _meta"| HI
+    HI --> |DirectResponseResult| Desktop
+    Desktop --> |"srcdoc injection\n(prefab:initial-data)"| iframe["&lt;iframe sandbox&gt;\nprefab_ui renderer"]
+    iframe --> |"postMessage\ntools/call"| IC
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Zone 1 — Edge Runtime (SovereignAgenticArchitectureZoneOne)                 │
-│                                                                             │
-│  Flutter/Tauri desktop shell                                                │
-│  ┌──────────────────────────────────────────────────────┐                  │
-│  │  PrefabOverlayPanel (React)                          │                  │
-│  │  ┌──────────────────────────────────┐                │                  │
-│  │  │  <iframe sandbox="allow-scripts">│ ◄──────────────┼── prefab_ui      │
-│  │  │  Layer 1: prefab:resize          │                │   renderer HTML  │
-│  │  │  Layer 2: JSON-RPC 2.0           │                │                  │
-│  │  └──────────────────────────────────┘                │                  │
-│  └──────────────────────────────────────────────────────┘                  │
-│           │  postMessage (tools/call)                                       │
-│           ▼                                                                 │
-│  InvokeCapability use case ──► GovernedCapabilityGateway (MCP client)      │
-│                                                                             │
-│  OR (model-driven path):                                                    │
-│  HandleInteraction ──► LangGraph orchestrator ──► Local model              │
-│                                        │                                    │
-│                                        ▼                                    │
-└────────────────────────────────────── MCP ─────────────────────────────────┘
-                                         │  (Zone 1 never imports Zone 2)
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Zone 2 — Governed Mediation (SovereignAgenticArchitectureZoneTwo)           │
-│                                                                             │
-│  FastMCP server + policy engine                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │ _build_capability_handler                                             │  │
-│  │   authenticate caller → evaluate policy → run capability →            │  │
-│  │   strip to permitted fields → build PrefabApp → wrap in ToolResult   │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  App session store (Redis): AppInteractionSession per user+capability       │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                         │  (Zone 2 connector boundary only)
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Zone 3 — Reasoning Model + Enterprise Sources                               │
-│  FHIR, SQL, third-party APIs — only reachable through Zone 2               │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+
+Zone 1 never imports Zone 2. All Zone 2 interaction goes through the MCP interface.
 
 ---
 
@@ -78,11 +92,11 @@ Every capability that should display a visual overlay configures an `McpAppDefin
 ```python
 # src/zone2/apps/builder.py
 definition = (
-    AppOverlay("appointments.list")
-    .model_text("Found {count} appointments")          # compact model-facing summary
-    .app(ItemListFactory(columns=COLUMNS, ...))        # visual factory for the iframe
-    .backend_caps("appointments.list_page")            # capabilities unlocked per session
-    .compile()                                         # returns McpAppDefinition
+    AppOverlay("domain.list")
+    .model_text("Found {count} items")              # compact model-facing summary
+    .app(ItemListFactory(columns=COLUMNS, ...))      # visual factory for the iframe
+    .backend_caps("domain.list_page")               # capabilities unlocked per session
+    .compile()                                       # returns McpAppDefinition
 )
 ```
 
@@ -96,7 +110,7 @@ class McpAppDefinition:
     backend_capability_ids: frozenset[str]   # allowed backend calls this session
 ```
 
-The model projector and app projector see the same `GovernedOutcome` — but produce different outputs. The model gets a compact human-readable summary; the iframe gets a full structured Prefab tree.
+The model projector and app projector see the same `GovernedOutcome` but produce different outputs. The model gets a compact human-readable summary; the iframe gets a full structured Prefab tree.
 
 ### 3b. View factories
 
@@ -116,17 +130,11 @@ class ViewFactory(Protocol):
 
 `PrefabApp` is a `prefab_ui` Python type — a structured tree of generic node types (columns, tables, labels, buttons) that the renderer knows how to draw. Zone 1 never sees these types.
 
-### 3c. NHS capability wiring (example)
+### 3c. Capability wiring
 
-The NHS plugin (`src/zone2/plugins/nhs/capabilities.py`) registers three app definitions at module load:
+A plugin registers one `McpAppDefinition` per entry capability. Paginated capabilities also register a `backend_only=True` backend capability whose ID is listed in `backend_capability_ids`. At runtime, Zone 2 only allows backend calls whose IDs are in the `AppInteractionSession.allowed_backend_caps` set — requests for anything else are rejected before the connector boundary.
 
-```python
-NHS_APPOINTMENT_LIST_APP_DEFINITION   # capability_id="appointments.list",  backend_caps={"appointments.list_page"}
-NHS_APPOINTMENT_DETAILS_APP_DEFINITION # capability_id="appointments.get_details"
-NHS_APPOINTMENT_BOOKING_APP_DEFINITION  # capability_id="appointments.book"
-```
-
-These are singletons defined in `src/zone2/apps/nhs/projectors.py` and registered in `McpAppRegistry`. New capabilities simply add another definition — no Zone 1 change required.
+New capabilities follow the same pattern: define, build an `AppOverlay`, register. Zone 1 requires no changes.
 
 ### 3d. The app session
 
@@ -134,10 +142,10 @@ When a user views an overlay with paginated data, subsequent page requests must 
 
 ```python
 session_id: str                      # UUID4 — this is what Zone 1 calls "app_session_id"
-principal_id: str                    # Keycloak sub
+principal_id: str                    # identity provider sub
 org_id: str
-entry_capability_id: str             # e.g. "appointments.list"
-allowed_backend_caps: frozenset[str] # e.g. {"appointments.list_page"}
+entry_capability_id: str             # the capability that produced the initial overlay
+allowed_backend_caps: frozenset[str] # capabilities this session may call
 query_fingerprint: str               # stable hash of principal+cap+params
 created_at: datetime
 expires_at: datetime
@@ -156,7 +164,7 @@ When Zone 2 processes a capability with an app overlay, the MCP `ToolResult` has
 {
   "status": "completed",
   "request_id": "...",
-  "result": { "appointments": [ ... ] },
+  "result": { "items": [ ... ] },
   "provenance": { "reasoning_used": "...", "source_count": 0 },
   "zone2_app": {
     "$prefab": { "version": "0.3" },
@@ -185,19 +193,19 @@ sequenceDiagram
     participant Sidecar as Zone 1 Sidecar (FastAPI)
     participant LangGraph as LangGraph Orchestrator
     participant Model as Local Model
-    participant Gateway as GovernedCapabilityGateway (MCP client)
+    participant Gateway as GovernedCapabilityGateway
     participant Z2 as Zone 2 (FastMCP)
 
-    User->>Desktop: submit query ("show my appointments")
+    User->>Desktop: submit query
     Desktop->>Sidecar: POST /v1/interaction
     Sidecar-->>Desktop: 202 + interaction_id
     Desktop->>Sidecar: GET /v1/interaction/{id}/result (polls)
 
     Sidecar->>LangGraph: HandleInteraction.execute()
     LangGraph->>Model: prompt + tool descriptions
-    Model-->>LangGraph: tools/call → appointments.list
+    Model-->>LangGraph: tools/call → capability
     LangGraph->>Gateway: invoke(CapabilityInvocationRequest)
-    Gateway->>Z2: MCP tools/call over stdio/HTTP
+    Gateway->>Z2: MCP tools/call
     Z2-->>Gateway: ToolResult (structured_content + _meta)
     Gateway-->>LangGraph: CompletedOutcome (app_overlay + app_session_id extracted)
     LangGraph->>Model: tool result (model projector text only)
@@ -228,128 +236,61 @@ renderer HTML                     Modified HTML (srcDoc)
                                   </html>
 ```
 
-The renderer's internal `dsr()` function reads this element at module load. The initial view appears without any postMessage handshake. HTML-sensitive characters (`&`, `<`, `>`) are escaped to Unicode escapes (`&`, `<`, `>`) to prevent injection via overlay content.
+The renderer's internal `dsr()` function reads this element at module load. The initial view appears without any postMessage handshake. HTML-sensitive characters (`&`, `<`, `>`) are escaped to Unicode escapes to prevent injection via overlay content.
 
 ---
 
 ## 6. The sandboxed iframe
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Tauri WebviewWindow (parent)                           │
-│                                                         │
-│  window.__TAURI__ ✓ accessible here                     │
-│                                                         │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │  <iframe                                          │  │
-│  │    srcdoc={injected HTML}                         │  │
-│  │    sandbox="allow-scripts"                        │  │
-│  │    title="Result overlay"                         │  │
-│  │  >                                                │  │
-│  │                                                   │  │
-│  │  Renderer runs here (opaque origin):              │  │
-│  │  ✗ window.__TAURI__ — inaccessible               │  │
-│  │  ✗ parent DOM — cross-origin blocked             │  │
-│  │  ✗ localStorage / sessionStorage — blocked       │  │
-│  │  ✗ Network requests — no allow-same-origin        │  │
-│  │  ✓ window.parent.postMessage — only channel out  │  │
-│  │  ✓ JavaScript execution (allow-scripts)          │  │
-│  │                                                   │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-```
+The iframe runs with `sandbox="allow-scripts"` and no `allow-same-origin`, giving it an **opaque origin**. This is the critical security property.
 
-`sandbox="allow-scripts"` without `allow-same-origin` gives the iframe an **opaque origin**. This is the critical security property: the renderer bundle cannot call Tauri commands, cannot read parent state, and cannot escalate privileges. Its only communication channel to Zone 1 is `postMessage`.
+| Property | In parent window | In iframe (opaque origin) |
+|---|---|---|
+| `window.__TAURI__` | Accessible | Blocked — opaque origin |
+| Parent DOM | Accessible | Cross-origin blocked |
+| `localStorage` / `sessionStorage` | Accessible | Blocked |
+| Network requests | Allowed | Blocked — no `allow-same-origin` |
+| `window.parent.postMessage` | — | Only outbound channel |
+| JavaScript execution | Yes | Yes (`allow-scripts`) |
 
 The `invoke_capability` Tauri command is **not listed** in the iframe's Tauri capability config — it is only accessible to the main window's JS. Even if a malicious payload in the renderer tried to call Tauri directly, it has no path to do so.
+
+`postMessage` is the renderer's sole exit: it can tell the host its height, and it can send JSON-RPC requests. It cannot read responses it didn't ask for, cannot read parent state, and cannot escalate privileges.
 
 ---
 
 ## 7. Two-layer postMessage protocol
 
-The renderer and parent window use two coexisting message formats over the same `postMessage` channel:
+The renderer and parent window use two coexisting message formats over the same `postMessage` channel. The host discriminates by checking `data["jsonrpc"] === "2.0"` first — if present it's Layer 2; otherwise it's a Layer 1 type check.
 
 | Layer | Format | Direction | Purpose |
 |---|---|---|---|
-| Layer 1 | `{ type: "prefab:resize", height: <n> }` | renderer → host | Dynamic height adjustment |
-| Layer 2 | Full JSON-RPC 2.0 (`jsonrpc`, `id`, `method`) | bidirectional | MCP interactive protocol |
+| 1 | `{ type: "prefab:resize", height: <n> }` | renderer → host | Dynamic height adjustment |
+| 2 | JSON-RPC 2.0 (`jsonrpc`, `id`, `method`) | bidirectional | MCP interactive protocol |
 
-The host discriminates: **check `data["jsonrpc"] === "2.0"` first**. If present → Layer 2. Otherwise → Layer 1 `type` check. Both layers coexist; neither interferes with the other.
+```mermaid
+sequenceDiagram
+    participant R as prefab_ui Renderer (iframe)
+    participant H as PrefabOverlayPanel (host)
 
-### Layer 1: `prefab:resize`
+    R->>H: { type: "prefab:resize", height: 320 }
+    Note over H: Layer 1 — setIframeHeight(320)
 
-```typescript
-// Renderer sends:
-window.parent.postMessage({ type: "prefab:resize", height: 420 }, "*");
+    R->>H: { jsonrpc:"2.0", id:1, method:"ui/initialize", params:{} }
+    Note over H: Layer 2 — MCP handshake
+    H-->>R: { jsonrpc:"2.0", id:1, result:{ protocolVersion, capabilities, serverInfo } }
+    Note over R: Interactive mode enabled
 
-// Host handler (PrefabOverlayPanel.tsx):
-if (type === "prefab:resize") {
-  if (typeof h === "number" && h > 0) setIframeHeight(h);
-}
+    R->>H: { type: "prefab:resize", height: 440 }
+    Note over H: Layer 1 — setIframeHeight(440)
+
+    R->>H: { jsonrpc:"2.0", id:2, method:"tools/call", params:{ name, arguments } }
+    Note over H: Layer 2 — widget action → InvokeCapability
+    H-->>R: { jsonrpc:"2.0", id:2, result:{ content, isError:false } }
+    Note over R: Update view with new data
 ```
 
-### Layer 2: JSON-RPC 2.0
-
-#### `ui/initialize` — MCP handshake
-
-The renderer sends this on startup. Without a host response it stays in standalone (read-only) mode; interactive widget buttons fail silently.
-
-```
-Renderer → Host:
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "ui/initialize",
-  "params": {}
-}
-
-Host → Renderer:
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "protocolVersion": "2026-01-26",
-    "capabilities": { "tools": {} },
-    "serverInfo": { "name": "zone1-host", "version": "1.0" }
-  }
-}
-```
-
-#### `tools/call` — widget action
-
-When the user activates a pagination button or drill-down link:
-
-```
-Renderer → Host:
-{
-  "jsonrpc": "2.0",
-  "id": 42,
-  "method": "tools/call",
-  "params": {
-    "name": "appointments.list_page",
-    "arguments": { "page": 2, "page_size": 10 }
-  }
-}
-
-Host → Renderer (success):
-{
-  "jsonrpc": "2.0",
-  "id": 42,
-  "result": {
-    "content": [{ "type": "text", "text": "{...}" }],
-    "isError": false
-  }
-}
-
-Host → Renderer (failure):
-{
-  "jsonrpc": "2.0",
-  "id": 42,
-  "error": { "code": -32000, "message": "Capability invocation failed" }
-}
-```
-
-**`id` correlation is mandatory.** The renderer tracks in-flight requests by auto-incrementing integer `id`. Responses must echo the exact same `id`. Correlating by capability name would break concurrent calls to the same capability.
+**`id` correlation is mandatory.** The renderer tracks in-flight requests by auto-incrementing integer `id`. Responses must echo the exact same `id`. Without `ui/initialize` completing, the renderer stays in standalone (read-only) mode and widget buttons fail silently.
 
 ---
 
@@ -363,7 +304,7 @@ sequenceDiagram
     participant Panel as PrefabOverlayPanel (React)
     participant Transport as RuntimeTransport (Tauri)
     participant Sidecar as Zone 1 Sidecar (FastAPI)
-    participant UseCase as InvokeCapability use case
+    participant UseCase as InvokeCapability
     participant Gateway as GovernedCapabilityGateway
     participant Z2 as Zone 2 (FastMCP)
 
@@ -376,7 +317,7 @@ sequenceDiagram
     Transport->>Sidecar: GET /v1/interaction/{id}/result (awaitInteraction)
 
     Sidecar->>UseCase: InvokeCapabilityCommand
-    Note over UseCase: 1. Load session<br/>2. Catalogue lookup (fail-closed)<br/>3. Acquire credentials
+    Note over UseCase: 1. apps_enabled gate<br/>2. AppInstance existence + token match<br/>3. Catalogue lookup (fail-closed)<br/>4. Acquire credentials
     UseCase->>Gateway: invoke(CapabilityInvocationRequest)<br/>arguments["session_id"] = app_session_id
     Gateway->>Z2: MCP tools/call (backend-only capability)
     Z2->>Z2: validate app_session_id against AppSessionStore
@@ -392,78 +333,75 @@ sequenceDiagram
     Renderer->>Renderer: update view with new page data
 ```
 
-### Key invariants in the toolCall bridge
+### Key invariants
 
-**1. Fail-closed capability check.** `InvokeCapability` looks up `capability_id` in the session's `CapabilityCatalogue` before touching the gateway. If the capability is not in the catalogue, the call is rejected and Zone 2 is never contacted. This prevents arbitrary tool invocations via the overlay.
+**1. Three-level local gate.** Before the catalogue lookup, `InvokeCapability` enforces: `apps_enabled` feature flag → `AppInstance` existence and ACTIVE state → `app_session_id` token match. All three checks run before Zone 2 is contacted (see [§9](#9-app-instance-lifecycle)).
 
-**2. No conversation history mutation.** `session.complete_processing_turns(())` is called with an empty tuple. The LLM context window (`session.turns`) is unchanged. Page 2 of a list does not contaminate the conversation history.
+**2. Fail-closed capability check.** `InvokeCapability` looks up `capability_id` in the session's `CapabilityCatalogue`. If the capability is not in the catalogue, the call is rejected and Zone 2 is never contacted.
 
-**3. `app_session_id` threading.** Zone 2's backend handler reads the app session from `arguments["session_id"]` (literal key, module-level constant `_SESSION_ID_PARAM`). Zone 1's `InvokeCapability` merges the Zone 1 `app_session_id` field into `gateway_arguments["session_id"]`:
+**3. No conversation history mutation.** `session.complete_processing_turns(())` is called with an empty tuple. The LLM context window is unchanged. Page 2 of a list does not contaminate the conversation history.
+
+**4. `app_session_id` threading.** Zone 2's backend handler reads the app session from `arguments["session_id"]` (`_SESSION_ID_PARAM`). Zone 1's `InvokeCapability` merges it in:
 ```python
 gateway_arguments = dict(command.arguments) | {"session_id": command.app_session_id}
 ```
 The iframe never sees `app_session_id` directly — it flows through the host only.
 
-**4. Zone 1 `session_id` ≠ Zone 2 `session_id`.** Zone 1's `session_id` identifies the `InteractionSession` (conversation). Zone 2's `session_id` (what Zone 1 calls `app_session_id`) identifies the `AppInteractionSession` (the stateful overlay context). They are different concepts, different scopes, and must never be conflated.
+**5. Zone 1 `session_id` ≠ Zone 2 `session_id`.** Zone 1's `session_id` identifies the `InteractionSession` (conversation). Zone 2's `session_id` (what Zone 1 calls `app_session_id`) identifies the `AppInteractionSession` (the stateful overlay context). They are different concepts, different scopes, and must never be conflated.
 
 ---
 
 ## 9. App instance lifecycle
 
-When the orchestrator returns a result that contains an `app_overlay`, Zone 1 tracks a single active `AppInstance` per conversation session. This gives Zone 1 a local record of the mounted overlay so it can enforce a fail-closed gate without relying solely on Zone 2.
+When the orchestrator returns a result containing `app_overlay`, Zone 1 tracks a single active `AppInstance` per conversation session. This gives Zone 1 a local record of the mounted overlay so it can enforce a fail-closed gate without relying solely on Zone 2.
 
 ### 9a. `AppInstance` state machine
 
-`AppInstance` (`contexts/app_hosting/domain/instance.py`) is a plain dataclass:
-
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> ACTIVE : create_for_result()
+    ACTIVE --> DESTROYED : destroy()\n(idempotent)
+    DESTROYED --> DESTROYED : destroy()\n(no-op)
 ```
-ACTIVE  ──destroy()──►  DESTROYED
-```
 
-- **ACTIVE** — the overlay is mounted; `InvokeCapability` may proceed.
-- **DESTROYED** — the session has closed or the instance was torn down; all further `InvokeCapability` calls for that session are rejected.
-
-`destroy()` is idempotent: calling it on an already-`DESTROYED` instance is a no-op.
+- **ACTIVE** — overlay is mounted; `InvokeCapability` may proceed.
+- **DESTROYED** — session closed or instance torn down; all further `InvokeCapability` calls for that session are rejected.
 
 ### 9b. Instance creation (`HandleInteraction`)
 
-After the orchestrator returns:
-
-```
-result.app_overlay is not None
-         │
-         ├── apps_enabled=False ──► emit AppResourceRejected
-         │                          strip overlay from DirectResponseResult
-         │                          (text response still delivered)
-         │
-         └── apps_enabled=True  ──► AppInstanceRepository.create_for_result(...)
-                                     AppSandboxCoordinator.notify_instance_created(instance)
-                                     emit AppInstanceCreated
-                                     emit AppResourceAvailable
-                                       resource_uri = zone2://app/<capability_id>/<app_version>
+```mermaid
+flowchart TD
+    A{app_overlay\nin result?} -- No --> Z[No App events\noverlay = None]
+    A -- Yes --> B{apps_enabled?}
+    B -- False --> C[emit AppResourceRejected\nstrip overlay from result\ntext response still delivered]
+    B -- True --> D[AppInstanceRepository\n.create_for_result]
+    D --> E[AppSandboxCoordinator\n.notify_instance_created]
+    E --> F[emit AppInstanceCreated]
+    F --> G[emit AppResourceAvailable\nresource_uri = zone2://app/id/version]
 ```
 
 `apps_enabled` is a plain `bool` injected at construction time — not a `RuntimeConfiguration` object. Operators can disable the entire App overlay feature without touching Zone 2.
 
 ### 9c. Three-level local gate (`InvokeCapability`)
 
-Before the catalogue lookup, `InvokeCapability` runs three fail-closed checks:
+Before the catalogue lookup, `InvokeCapability` runs three fail-closed checks in order:
 
-| Level | Check | Error code |
+| Level | Check | Rejects with |
 |---|---|---|
 | 1 | `apps_enabled=False` | `APP_RESOURCE_REJECTED` |
-| 2 | No `ACTIVE` `AppInstance` for the session (includes replayed destroyed-session tokens) | `APP_INSTANCE_NOT_FOUND` |
-| 3 | `command.app_session_id ≠ instance.app_session_id` (confused-deputy defence) | `APP_SESSION_EXPIRED` |
+| 2 | No `ACTIVE` `AppInstance` for the session | `APP_INSTANCE_NOT_FOUND` |
+| 3 | `command.app_session_id ≠ instance.app_session_id` | `APP_SESSION_EXPIRED` |
 
-All three checks run **before** Zone 2 is contacted. Zone 2's `_validate_session` remains the authoritative enforcement boundary; the Zone 1 gate is defence-in-depth that avoids an unnecessary round-trip on known-invalid calls.
+Level 3 is the confused-deputy defence: an iframe presenting a stale token from a previous overlay cannot escalate to the current session. All three checks run before Zone 2 is contacted; Zone 2's `_validate_session` remains the authoritative enforcement boundary.
 
 ### 9d. Session close teardown
 
 `LocalEdgeRuntime.close_session` checks for an active `AppInstance` before emitting `SessionClosed`. If one exists:
 
-1. `instance.destroy()` — transitions the in-memory object to `DESTROYED`
+1. `instance.destroy()` — transitions to `DESTROYED`
 2. `AppInstanceRepository.destroy_for_session(session_id)` — removes the record
-3. `AppSandboxCoordinator.notify_instance_destroyed(app_instance_id)` — signals the render surface (no-op in Phase 6; Phase 8 sends a Flutter channel signal)
+3. `AppSandboxCoordinator.notify_instance_destroyed(app_instance_id)` — signals the render surface (no-op now; a future native mobile adapter replaces this with real mount/unmount signals)
 4. Emit `AppInstanceDestroyed` on the SSE stream — the consumer always receives a terminal lifecycle event before `SessionClosed`
 
 ### 9e. `AppSandboxCoordinator` — the render surface seam
@@ -475,60 +413,57 @@ async def notify_instance_created(self, instance: AppInstance) -> None: ...
 async def notify_instance_destroyed(self, app_instance_id: AppInstanceId) -> None: ...
 ```
 
-Phase 6 injects `NoOpAppSandboxCoordinator`. Phase 8 (Flutter MCP App sandbox) replaces it with an adapter that sends native channel signals to mount/unmount the WebView.
+`NoOpAppSandboxCoordinator` is the current implementation. A future native mobile adapter will replace it with real platform-channel signals for mounting and unmounting the sandboxed surface.
 
 ---
 
 ## 10. `app_session_id` — full lifecycle
 
-```
-Zone 2 creates session                       Zone 1 receives session
-──────────────────────                       ──────────────────────
-AppInteractionSession {                      DirectResponseResultWire {
-  session_id: "abc-123"   ──────────────►      app_session_id: "abc-123"
-  allowed_backend_caps:                         app_overlay: { "$prefab": ... }
-    {"appointments.list_page"}               }
-}
-↓
-ToolResult._meta["zone2/app_session_id"] = "abc-123"
-ToolResult.structured_content["zone2_app"] = { "$prefab": ... }
+```mermaid
+sequenceDiagram
+    participant Z2 as Zone 2
+    participant GW as GovernedCapabilityGateway
+    participant HI as HandleInteraction
+    participant Desktop as Desktop (React)
+    participant iframe as prefab_ui iframe
+    participant IC as InvokeCapability
 
-                          ──────────────►   PrefabOverlayPanel receives:
-                                              appSessionId: "abc-123" (prop)
-                                              appOverlay: { "$prefab": ... } (prop)
+    Z2->>GW: ToolResult\n_meta["zone2/app_session_id"] = "abc-123"\nstructured_content["zone2_app"] = {...}
+    GW->>HI: CompletedOutcome\napp_session_id="abc-123"\napp_overlay={...}
+    HI->>HI: AppInstanceRepository.create_for_result\napp_session_id stored in AppInstance
+    HI->>Desktop: DirectResponseResultWire\napp_session_id="abc-123"\napp_overlay={...}
 
-                          Widget press:     handleToolCall("appointments.list_page", {page:2})
-                                              invokeCapability({
-                                                capabilityId: "appointments.list_page",
-                                                appSessionId: "abc-123"   ← forwarded
-                                              })
+    Desktop->>iframe: srcdoc injection\n(prefab:initial-data contains app_overlay)
+    Note over iframe: Renders initial view\nno knowledge of app_session_id
 
-                          ──────────────►   InvokeCapabilityCommand {
-                                              capability_id: "appointments.list_page"
-                                              app_session_id: "abc-123"
-                                            }
-                                              gateway_arguments = { page: 2, session_id: "abc-123" }
-                                                                               ↑
-                                            Zone 2 reads this as _SESSION_ID_PARAM
+    iframe->>Desktop: postMessage tools/call\n{ name, arguments }
+    Note over Desktop: Host holds app_session_id\niframe never sees it
+    Desktop->>IC: InvokeCapabilityCommand\napp_session_id="abc-123"
+    IC->>IC: Gate check: token matches AppInstance
+    IC->>Z2: MCP tools/call\narguments["session_id"] = "abc-123"
+    Z2->>Z2: validate against AppSessionStore
+    Z2-->>IC: ToolResult (new page data)
+    IC-->>Desktop: DirectResponseResultWire
+    Desktop->>iframe: postMessage JSON-RPC response\n(id-correlated)
 ```
 
 ---
 
-## 11. Sidecar endpoints involved
+## 11. Sidecar endpoints
 
-| Endpoint | Method | Status | Phase | Purpose |
-|---|---|---|---|---|
-| `/v1/prefab-renderer` | GET | 200 HTML | Phase 4 | Serve bundled `prefab_ui` renderer HTML |
-| `/v1/interaction` | POST | 202 | Phase 1 | Submit conversational query (model-driven) |
-| `/v1/interaction/{id}/result` | GET | 200 | Phase 1 | Poll for interaction result (shared by both paths) |
-| `/v1/capability/invoke` | POST | 202 | Phase 5 | Direct capability invocation (overlay toolCall bridge) |
-| `/v1/interaction/{id}/events` | GET | SSE | Phase 2 | Stream `InteractionAccepted`, `InteractionCompleted` events |
+| Endpoint | Method | Response | Purpose |
+|---|---|---|---|
+| `/v1/prefab-renderer` | GET | 200 HTML | Serve bundled `prefab_ui` renderer HTML |
+| `/v1/interaction` | POST | 202 | Submit conversational query (model-driven path) |
+| `/v1/interaction/{id}/result` | GET | 200 | Poll for interaction result (shared by both paths) |
+| `/v1/capability/invoke` | POST | 202 | Direct capability invocation (overlay toolCall bridge) |
+| `/v1/interaction/{id}/events` | GET | SSE | Stream `InteractionAccepted`, `InteractionCompleted`, App lifecycle events |
 
 All endpoints under `/v1/` require the `X-Host-Secret` header (ephemeral per-sidecar secret shared between Tauri shell and sidecar at startup).
 
 ---
 
-## 12. Tauri commands involved
+## 12. Tauri commands
 
 | Command | Rust function | Purpose |
 |---|---|---|
@@ -543,7 +478,7 @@ All endpoints under `/v1/` require the `X-Host-Secret` header (ephemeral per-sid
 
 ## 13. `RuntimeTransport` — the abstraction boundary
 
-All desktop feature code reaches Zone 1 sidecar through `getRuntimeTransport()`, never by importing from `@platform/tauri` or `@tauri-apps/api/core` directly. This is enforced by the dependency cruiser config.
+All desktop feature code reaches the Zone 1 sidecar through `getRuntimeTransport()`, never by importing from `@platform/tauri` or `@tauri-apps/api/core` directly. This is enforced by the dependency cruiser config.
 
 ```typescript
 // src/modules/runtime-client/transport/runtime-transport.ts
@@ -606,7 +541,7 @@ MY_PAGE_CAPABILITY = CapabilityDefinition(
 registry.register_capability(MY_PAGE_CAPABILITY)
 ```
 
-That's it. Zone 1's `PrefabOverlayPanel` will render the output without modification. The new capability's `backend_only=True` is what allows Zone 1's `InvokeCapability` use case to call it directly — Zone 2 checks `allowed_backend_caps` on the `AppInteractionSession`.
+Zone 1's `PrefabOverlayPanel` will render the output without modification. The `backend_only=True` flag is what allows Zone 1's `InvokeCapability` to call it directly — Zone 2 checks `allowed_backend_caps` on the `AppInteractionSession`.
 
 ---
 
@@ -625,7 +560,7 @@ The current `sandbox="allow-scripts"` approach is appropriate for governed Zone 
 
 The terminal UI (`zone1 tui`) cannot render HTML. The generic fallback dispatcher (`cli/tui/apps_placeholder.py::_render_prefab_node`) recurses only on the structural `Stack` type and renders all other node types as generic key-value Rich panels.
 
-This is consistent with the zero-knowledge principle: the TUI knows only `Stack` from Prefab's structure. It has no knowledge of `DataTable`, `BookingConfirmationCard`, or any domain-specific type.
+This is consistent with the zero-knowledge principle: the TUI knows only `Stack` from Prefab's structure. It has no knowledge of any capability-specific node types.
 
 ---
 
@@ -646,12 +581,14 @@ Both zones must use the **same `prefab-ui` version**. A mismatch would cause the
 | `src/zone2/apps/builder.py` | 2 | `AppOverlay` fluent builder |
 | `src/zone2/apps/contracts.py` | 2 | `McpAppDefinition`, `AppInteractionSession`, protocols |
 | `src/zone2/apps/factories/` | 2 | `ItemListFactory`, `RecordDetailFactory`, `BookingConfirmationFactory` |
-| `src/zone2/apps/nhs/projectors.py` | 2 | NHS `McpAppDefinition` singletons |
 | `src/zone2/api/mcp/tools.py` | 2 | `_build_capability_handler` — overlay finalization + session creation |
-| `runtime/src/zone1/application/invoke_capability.py` | 1 | `InvokeCapability` use case — toolCall bridge |
+| `runtime/src/zone1/application/invoke_capability.py` | 1 | `InvokeCapability` use case — toolCall bridge + three-level gate |
+| `runtime/src/zone1/application/handle_interaction.py` | 1 | `HandleInteraction` — App instance creation + event emission |
+| `runtime/src/zone1/contexts/app_hosting/domain/instance.py` | 1 | `AppInstance` state machine |
+| `runtime/src/zone1/infrastructure/app_instances/in_memory.py` | 1 | `InMemoryAppInstanceRepository` |
 | `runtime/src/zone1/api/http/routers.py` | 1 | `POST /v1/capability/invoke` + `GET /v1/prefab-renderer` endpoints |
 | `runtime/src/zone1/api/wire/commands.py` | 1 | `CapabilityInvokeWire` wire schema |
-| `runtime/src/zone1/contracts/ports.py` | 1 | `EdgeRuntime` protocol + `GovernedCapabilityGateway` port |
+| `runtime/src/zone1/contracts/ports.py` | 1 | `AppInstanceRepository`, `AppSandboxCoordinator`, `GovernedCapabilityGateway` ports |
 | `desktop/src-tauri/src/commands.rs` | 1 | `invoke_capability`, `get_prefab_renderer` Tauri commands |
 | `desktop/src/features/conversation/PrefabOverlayPanel.tsx` | 1 | Sandboxed iframe + two-layer postMessage bridge |
 | `desktop/src/features/conversation/InteractionResultView.tsx` | 1 | Passes `sessionId` + `appSessionId` from result to panel |
@@ -659,3 +596,4 @@ Both zones must use the **same `prefab-ui` version**. A mismatch would cause the
 | `desktop/src/platform/tauri/tauri-runtime-transport.ts` | 1 | Production Tauri implementation |
 | `desktop/src/shared/testing/in-memory-runtime-transport.ts` | 1 | Test fake |
 | `docs/adr/0028-*.md` | 1 | Full sandboxed iframe decision record |
+| `runtime/docs/adr/0029-*.md` | 1 | App instance lifecycle and local gate decision record |
