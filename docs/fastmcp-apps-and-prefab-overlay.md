@@ -46,40 +46,70 @@ The solution is two layered systems:
 
 ## 2. Three-zone call map
 
-There are two distinct paths through the system — the model-driven initial call and the direct widget toolCall bridge:
+There are two distinct paths through the system:
+
+- **Path ①** — model-driven: the user sends a query; LangGraph drives the local model until it emits a tool call; the gateway forwards it to Zone 2; the response surfaces an MCP App overlay.
+- **Path ②** — toolCall bridge: a widget inside the sandboxed MCP App iframe fires a `postMessage`; the React shell relays it directly to `InvokeCapability`, bypassing the model entirely.
 
 ```mermaid
-flowchart TD
-    User([User]) --> Desktop[Tauri Desktop\nReact shell]
+%%{init: {'flowchart': {'padding': 24, 'nodeSpacing': 50, 'rankSpacing': 90, 'curve': 'linear'}}}%%
+flowchart LR
+    User([User])
 
-    subgraph Z1["Zone 1 — Edge Runtime"]
-        Desktop --> |"POST /v1/interaction\n(model-driven path)"| HI[HandleInteraction]
-        Desktop --> |"POST /v1/capability/invoke\n(toolCall bridge)"| IC[InvokeCapability]
+    subgraph Z1["Zone 1 — Desktop Shell (Tauri + React)"]
+        direction TB
 
-        HI --> LG[LangGraph Orchestrator]
-        LG --> Model[Local Model]
-        Model --> |tools/call| LG
-        LG --> GW[GovernedCapabilityGateway\nMCP client]
+        subgraph UI["React UI"]
+            Conv["ConversationView"]
+            Panel["PrefabOverlayPanel"]
+            App["&lt;iframe sandbox&gt;  MCP App"]
+        end
 
-        IC --> GW
-
-        GW --> |MCP| Z2_Border[ ]
+        subgraph Sidecar["Python Sidecar"]
+            HI["HandleInteraction"]
+            subgraph LG["LangGraph"]
+                Loop["ReAct loop"]
+                Mdl["Local model"]
+                Loop --> Mdl
+                Mdl -->|tools/call| Loop
+            end
+            IC["InvokeCapability"]
+            GW["GovernedCapabilityGateway"]
+            HI --> LG --> GW
+            IC --> GW
+        end
     end
 
     subgraph Z2["Zone 2 — Governed Mediation"]
-        Z2_Border --> Handler["_build_capability_handler\nauthn → policy → run → strip → PrefabApp"]
-        Handler --> AppSession[(AppInteractionSession\nRedis)]
-        Handler --> |connector boundary| Z3[Zone 3\nEnterprise sources]
+        direction TB
+        Gvn["authn → policy → capability → PrefabApp"]
+        Sess[("AppInteractionSession  Redis")]
+        Gvn --- Sess
     end
 
-    Handler --> |ToolResult\nstructured_content + _meta| GW
-    GW --> |"app_overlay + app_session_id\nextracted from _meta"| HI
-    HI --> |DirectResponseResult| Desktop
-    Desktop --> |"srcdoc injection\n(prefab:initial-data)"| iframe["&lt;iframe sandbox&gt;\nprefab_ui renderer"]
-    iframe --> |"postMessage\ntools/call"| IC
+    subgraph Z3["Zone 3"]
+        direction TB
+        LLM["Reasoning model"]
+        Data[("Enterprise sources")]
+    end
+
+    style Z1 fill:#e4ebf5,stroke:#5b7ba8,stroke-width:3px
+    style UI fill:#f0f4fa,stroke:#a0b4cc,stroke-width:1px
+    style Sidecar fill:#f0f4fa,stroke:#a0b4cc,stroke-width:1px
+    style LG fill:#d9e4f0,stroke:#5b7ba8,stroke-width:1px
+    style Z2 fill:#f5f0e4,stroke:#a08040,stroke-width:3px
+    style Z3 fill:#eeebf5,stroke:#7d6d9a,stroke-width:3px
+
+    User -->|query| Conv
+    Conv -->|"① POST /v1/interaction"| HI
+    HI -.->|"response + app_overlay"| Conv
+    App -->|"② postMessage tools/call"| IC
+    GW -->|MCP| Gvn
+    Gvn -.->|"ToolResult + _meta"| GW
+    Gvn -->|connector boundary| Z3
 ```
 
-Zone 1 never imports Zone 2. All Zone 2 interaction goes through the MCP interface.
+Zone 1 never imports Zone 2. All Zone 2 interaction goes through `GovernedCapabilityGateway` — the single exit point for both paths. Solid arrows are calls; dashed arrows are responses.
 
 ---
 
