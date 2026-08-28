@@ -11,11 +11,29 @@ Run the setup script once to clone all three repos:
 ## 2. Prerequisites
 
 - [Podman Desktop](https://podman-desktop.io/) installed and running
-- Python 3.11+ with a virtual environment in `SovereignAgenticArchitectureZoneOne/.venv`
+- Python 3.11+
 - Node.js 18+
 
-Install Zone 1 dependencies (first time only):
+## 3. Configure Zone 1
 
+Copy the example env file and fill in your values:
+
+```powershell
+cd SovereignAgenticArchitectureZoneOne
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+- **`ZONE1_MODEL`** — path to your GGUF model file. The fine-tuned NHS model is preferred; if you don't have it, any LLaMA 3.2 1B GGUF works as a fallback (e.g. from [bartowski/Llama-3.2-1B-Instruct-GGUF](https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF)).
+- **`ZONE1_CAPABILITY_SERVER_URL`** — replace `<YOUR_WSL2_IP>` with your machine's WSL2 IP. Get it by running:
+  ```powershell
+  podman machine ssh "ip addr show eth0"
+  ```
+
+## 4. Install dependencies (first time only)
+
+**Zone 1:**
 ```powershell
 cd SovereignAgenticArchitectureZoneOne
 python -m venv .venv
@@ -23,24 +41,21 @@ python -m venv .venv
 pip install -r runtime/requirements.txt
 ```
 
-Install UI dependencies (first time only):
-
+**UI:**
 ```powershell
 cd NHS_Edge_App/ui
 npm install
 ```
 
-## 3. Start (three terminals)
+## 5. Start (three terminals)
 
 **Terminal 1 — Zone 2 (Podman containers)**
-
 ```powershell
 cd SovereignAgenticArchitectureZoneTwo
 podman-compose up -d
 ```
 
 **Terminal 2 — Zone 1**
-
 ```powershell
 cd SovereignAgenticArchitectureZoneOne
 .venv\Scripts\Activate.ps1
@@ -48,32 +63,18 @@ uvicorn zone1.api.http.main:app --host 127.0.0.1 --port 8001
 ```
 
 **Terminal 3 — UI**
-
 ```powershell
 cd NHS_Edge_App/ui
 npm run dev
 ```
 
 Then open [http://localhost:5173](http://localhost:5173) and log in with:
-
 - **Username**: `clinician-a`
 - **Password**: `password`
 
-## 4. WSL2 IP (if Zone 2 is unreachable)
+## 6. Keycloak token lifespan (if tokens expire mid-session)
 
-Podman containers run inside WSL2. If Zone 1 can't reach Zone 2, check the WSL2 IP:
-
-```powershell
-podman machine ssh "ip addr show eth0"
-```
-
-Update the IP in:
-- `SovereignAgenticArchitectureZoneOne/.env` → `ZONE1_CAPABILITY_SERVER_URL`
-- `NHS_Edge_App/ui/vite.config.js` → proxy target
-
-## 5. Keycloak token lifespan
-
-If you see token expiry errors after ~5 minutes, run this once after Zone 2 is up:
+Run once after Zone 2 is up:
 
 ```powershell
 $token = (Invoke-RestMethod -Uri "http://localhost:8080/realms/master/protocol/openid-connect/token" `
