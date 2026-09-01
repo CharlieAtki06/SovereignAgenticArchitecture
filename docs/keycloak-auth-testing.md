@@ -37,7 +37,7 @@ Zone 2 governs each call on **five orthogonal axes**:
 |---|---|---|---|
 | **roles** | *what operations?* | `realm_access.roles` claim + capability's `required_roles` | `role_not_permitted` |
 | **purpose** | *why? (lawful basis)* | `purpose` claim + capability's `permitted_purposes` | `purpose_not_permitted` |
-| **entitlement** | *which subjects?* | `practitioner_id` claim → enterprise lookup → allowed subjects | `subject_out_of_scope` |
+| **entitlement** | *which subjects?* | `preferred_username` → `CallerProfile.username` → care team lookup → allowed subjects | `subject_out_of_scope` |
 | **zone identity** | *which zone?* | `caller_zone` JWT claim → `ExecutionContext.caller_zone` | (drives field stripping, not denial) |
 | **field disclosure** | *which fields?* | `caller_zone==ZONE3` → `zone3_permitted_output_fields`; `ZONE1` → `role_field_policies` | (LIMIT_FIELDS obligation strips silently) |
 
@@ -53,9 +53,11 @@ Zone 2 governs each call on **five orthogonal axes**:
   - **Authorization Code + PKCE (S256)** — the production browser login (`zone1 chat --login`),
   - **Direct Access Grants (password/ROPC)** — the dev-only shortcut (`zone1 chat --as-user`),
   - loopback redirect URIs including `http://127.0.0.1:8250/callback`.
-- **Claims** the token carries (into the **access** token): `sub`, `realm_access.roles`, `purpose`,
-  `practitioner_id` (or `subject_id`), `aud = zone2-mcp` (Zone 2's audience), and
-  **`caller_zone: "zone1"`** (hardcoded via a protocol mapper — see §8 below).
+- **Claims** the token carries (into the **access** token): `sub`, `preferred_username`,
+  `realm_access.roles`, `purpose`, `subject_id` (patient self-service only),
+  `aud = zone2-mcp` (Zone 2's audience), and **`caller_zone: "zone1"`** (hardcoded via a protocol
+  mapper — see §8 below). `OidcIdentityResolver` normalises `preferred_username` into
+  `CallerProfile.username`; vendor plugins read `context.caller.username`, not raw JWT claims.
 - **Issuer / JWKS split:** issuer is `http://localhost:8080/realms/sovereign` (stable via
   `KC_HOSTNAME`); Zone 2 fetches signing keys in-network from `http://keycloak:8080/...`. This is
   why a browser/CLI on your host and a containerised Zone 2 agree on the token.
@@ -71,16 +73,16 @@ All users have password **`password`**.
 
 | Username | Role | `purpose` | Identity claim | Entitled subjects |
 |---|---|---|---|---|
-| **clinician-a** | `clinician` | `direct_care` | `practitioner_id=practitioner-a` | `patient-1`, `patient-2` |
-| **clinician-b** | `clinician` | `direct_care` | `practitioner_id=practitioner-b` | `patient-3` |
+| **clinician-a** | `clinician` | `direct_care` | `preferred_username=clinician-a` | `patient-1`, `patient-2` |
+| **clinician-b** | `clinician` | `direct_care` | `preferred_username=clinician-b` | `patient-3` |
 | **patient-x** | `patient` | `self_service` | `subject_id=patient-x` | — (self-service only) |
 
 Entitlement (who can see which subject) is **not** in the token — it's resolved at runtime from the
-mock FHIR `CareTeam` (`SovereignAgenticArchitectureZoneTwo/mock-fhir`), seeded as:
+mock FHIR `CareTeam` (`SovereignAgenticArchitectureZoneTwo/mock-fhir`), keyed by `preferred_username`:
 
 ```
-practitioner-a → [patient-1, patient-2]
-practitioner-b → [patient-3]
+clinician-a → [patient-1, patient-2]
+clinician-b → [patient-3]
 ```
 
 ### The NHS capabilities
@@ -91,6 +93,7 @@ All three require **purpose `direct_care`** and a **subject you're entitled to**
 
 | Tool | What it does | Notes |
 |---|---|---|
+| `patients.list()` | List all patients on the clinician's care team | Uses `caller.username` to query the FHIR care team; returns names + DOB. |
 | `appointments.list(subject_id)` | List a patient's appointments | **Returns a list.** Zone 1 callers receive all fields including `patient_reference`. Zone 3 LLM sub-calls have `patient_reference` stripped (not in `zone3_permitted_output_fields`). |
 | `appointments.get_details(subject_id, appointment_id)` | One appointment's detail + preparation | `appointment_id` can be any string (mock returns canned data). Zone 1 gets full record; Zone 3 gets stripped record. |
 | `appointments.book(subject_id, date, reason)` | **Book** an appointment | **Write + HITL**: requires human confirmation before it runs; audited |
@@ -270,8 +273,8 @@ python3 -c 'import sys,base64,json; p=sys.argv[1].split(".")[1]; print(json.dump
     -d username=clinician-a -d password=password \
     | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])'
   ```
-  Decode to confirm `aud=zone2-mcp`, `realm_access.roles`, `purpose`, `practitioner_id` (see
-  Zone 2's keycloak.md for the one-liner).
+  Decode to confirm `aud=zone2-mcp`, `realm_access.roles`, `purpose`, `preferred_username`, and
+  `caller_zone` (see Zone 2's keycloak.md for the one-liner).
 - **Automated tests** — Zone 1: `make test` (includes `test_cli_oidc.py`, which covers the browser
   flow's PKCE/state/callback without a real browser). Zone 2: `make test` (identity, policy,
   entitlement, e2e allow/deny).
