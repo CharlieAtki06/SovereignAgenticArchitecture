@@ -105,28 +105,62 @@ make dev       # API on http://localhost:8000
 
 ### Running the full system (both zones)
 
-`make up` brings up the whole stack — shared infra (Postgres, Redis, Keycloak),
-Zone 2 (governed, **real OIDC auth**), the mock FHIR backend, and the containerised
-Zone 1 edge. **Each zone owns its own `Dockerfile` + `docker-compose.yml`** (Zone 2:
-the governed stack; Zone 1: the edge). This root holds **no** compose — just the
-`Makefile` orchestrator + the shared `.env`. `make up` sequences them: Zone 2 first
-(it creates the `sovereign-zone2` network), then the Zone 1 edge, which joins it.
+For the normal interactive application, start a named **desktop** profile from
+this root workspace. The command selects Zone 2's realm/module compose overlay,
+then launches the desktop with its own local Zone 1 sidecar:
+
+```bash
+make desktop-up-nhs
+# sign in as clinician-a / password
+```
+
+Use `make desktop-up-infrastructure` for the synthetic Northstar example. Only
+one profile can use the normal local ports at a time. Stop the matching profile
+with `make desktop-down-nhs` or `make desktop-down-infrastructure`.
+
+For the complete lifecycle—source rebuilds, realm resets, worker logs, CLI
+testing, and the distinction between desktop and headless paths—use the
+[local demo runbook](docs/dev/local-demo-runbook.md).
+
+The optional headless path is for testing the containerised generic Zone 1 edge
+and CLI. A profile selects a Zone 2 compose overlay (realm, governed module and
+demo-only dependency wiring), then attaches that edge to its network. **Each zone
+owns its own `Dockerfile` + `docker-compose.yml`**; this root contains no compose
+and only orchestrates named targets. The generic `make up` remains a maintainer
+command for the Zone 2 base stack, not the supported NHS or Infrastructure demo path.
+
+The profile is deliberately one-way composition: Zone 1 deployment policy selects
+presentation; Zone 2 profile selects realm and domain module. The brand manifest
+does not select Keycloak, and a realm does not select a desktop brand. See the
+[command truth table](docs/keycloak-auth-testing.md#command-truth-table) before
+choosing a desktop or CLI path.
 
 ```bash
 ./setup.sh                 # clone both zones side-by-side (first time)
 cp .env.example .env       # optional — override secrets/knobs (defaults work as-is)
 # start an Ollama server on the host with the edge model, then:
-make up                    # from this repo root — brings up both zones
+make demo-up-nhs           # NHS realm + NHS module + mock FHIR + Zone 1 edge
+# or
+make demo-up-infrastructure # Northstar realm + maintenance module + Zone 1 edge
 # drive it from the host (real Keycloak user token → governed Zone 2 access):
 cd ../SovereignAgenticArchitectureZoneOne
-uv run zone1 chat --login --secret dev-secret
+uv run zone1 chat --login --issuer http://localhost:8080/realms/nhs-demo --secret dev-secret
 ```
 
-The single root `.env` configures the whole `make up` (both zones' composes
-interpolate from it). Requires a host Ollama (the model runtime is not
+Do not run `demo-up-*` and `desktop-up-*` for the same profile at the same time:
+the former starts a containerised edge; the latter starts the desktop's local
+sidecar.
+
+The single root `.env` configures shared local compose interpolation. Requires a
+host Ollama (the model runtime is not
 containerised — `ZONE1_MODEL_ENDPOINT` points at it). `--secret` is the edge host's
 local transport secret (`X-Host-Secret`), **not** the identity credential — identity
 is the Keycloak OIDC token the CLI registers via `--login`.
+
+See [Identity, Keycloak and governed demo testing](docs/keycloak-auth-testing.md)
+for ownership, identity and CLI verification. See [Northstar Infrastructure Operations](docs/demos/northstar-infrastructure-operations.md)
+for the synthetic-data safety boundary and expected work-order flow, and
+[NHS Care](docs/demos/nhs-care.md) for the clinical-demo acceptance matrix.
 
 > **Why `make up` and not a single `podman compose up`?** A single root compose
 > that `include:`s the zones would be ideal, but podman-compose doesn't rebase
@@ -170,7 +204,9 @@ Per-zone AI context (`graphify-out/graph.json`) lives in each zone's repo and is
 | Document | Contents |
 |---|---|
 | [ADRs](docs/adr/README.md) | Cross-zone architecture decisions that belong to neither zone alone |
+| [Local demo runbook](docs/dev/local-demo-runbook.md) | The supported desktop/headless commands, rebuild/reset lifecycle, and API/worker log diagnosis |
 | [Keycloak & auth testing](docs/keycloak-auth-testing.md) | How identity/Keycloak is set up, the test users, and what allow/deny to expect when driving the CLI |
+| [Demo acceptance guides](docs/demos/nhs-care.md) | NHS Care and Northstar Infrastructure Operations: profile-specific identities, safety boundaries, capability matrices, confirmation and audit verification |
 | [NHS Edge App migration guide](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/main/docs/dev/adapting-a-frontend.md) | Migrating the NHS Health App React UI onto the governed edge runtime — auth (Keycloak), clinician persona + entitlements, the `domain.action` tools, and the deferred/confirmation model |
 | [Contributing](CONTRIBUTING.md) | How to work across both repos, coordinate MCP contract changes, and open PRs |
 | [Zone 1 docs](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/tree/main/docs) | Architecture, flows, runtime/wrapper boundary, MCP integration, security model |
