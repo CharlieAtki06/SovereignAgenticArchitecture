@@ -7,9 +7,16 @@
 # Zone 1 edge which joins it. Both invocations run from HERE, so the single root
 # `.env` (see .env.example) configures the whole stack.
 #
-# Requires the two zone repos cloned side-by-side (./setup.sh) and a host Ollama
-# serving the edge model (the model runtime is not containerised). Container
+# Requires the two zone repos cloned side-by-side (./setup.sh). Container
 # commands auto-detect docker/podman.
+#
+# Model runtime — TWO paths, different Ollama requirements:
+#   Container path (`make up`, `make demo-up-*`): Zone 1 runs containerised.
+#     ZONE1_MODEL_ENDPOINT points at http://host.containers.internal:11434 — a
+#     host Ollama must be running manually (`ollama serve`).
+#   Desktop path (`make desktop-up-*`): Zone 1 runs as the Tauri desktop app.
+#     The Tauri host manages Ollama automatically (ADR-0032) — no manual
+#     `ollama serve` needed. llama-server is a stub; use ZONE1_MODEL_PROVIDER=ollama.
 
 SHELL := /bin/bash
 

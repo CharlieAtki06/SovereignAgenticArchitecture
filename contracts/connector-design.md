@@ -5,12 +5,99 @@
 
 ---
 
-## The bounded response invariant
+## App-enabled projection firewall (PP-1)
 
-Zone 1 runs a local model with a **context window of 4096–8192 tokens**. Every tool result
-returned by a Zone 2 connector is appended to the model's conversation history as a `tool`
-turn. A connector returning an unbounded collection can fill the context window in a single
-invocation — the model then has no room to reason, respond, or call another tool.
+An App-enabled connector returns two independent, governed projections. They have
+different consumers and must never be reconstructed from one another.
+
+| Zone 2 output | Consumer | PP-1 rule |
+|---|---|---|
+| Exactly one FastMCP `ToolResult.content` text block | Zone 1 model history | `ModelObservation`: non-empty and at most 1,024 Unicode code points. |
+| `structured_content.zone2_app` plus the opaque app-session reference | The authorised local App renderer | `AppPresentation`: opaque renderer data; it is not model context. |
+| `structured_content.result` and other governed fields | Neither Zone 1 model history nor generic App host state | Discarded by Zone 1 after it maps an App-enabled completion. |
+
+Zone 2 owns policy, response limiting, projector content, App structure and audit.
+Zone 1 is an anti-corruption mapper and generic local host: it does not inspect
+domain fields, create a projection, reproduce policy, or import Zone 2 source.
+
+Zone 1 validates the two projections independently. If the App envelope is
+invalid, Zone 1 fails the interaction closed and renders no raw structured
+data. If the App is valid but its model observation is missing,
+multiple, malformed or oversized, Zone 1 retains the App, performs no second
+model inference, persists only fixed safe turns, and returns exactly:
+
+> The governed result is available in the secure workspace.
+
+The preceding assistant tool-call is retained solely as the protocol partner
+for the fixed fallback tool turn. It is model-generated local control data, not
+a governed/App projection, and the test suite proves it contains none of the
+rich-result canaries.
+
+The App tree and opaque session reference are response-scoped. They must not
+enter LangGraph state, session turns, checkpoints, generic event payloads or
+model prompts. Log only the capability ID, observation failure category and
+length; never the observation text or governed/App payload.
+
+This is the PP-1 contract defined by
+[ADR 0006](../docs/adr/0006-model-observation-and-app-presentation-are-independent-projections.md).
+A completion containing `zone2_app` must never take a generic raw-result
+branch. The old direct backend/App route is removed; non-App semantic
+capabilities have their own explicitly bounded model-disclosure contract.
+
+---
+
+## Host-only App actions (PP-2)
+
+An App action is a human interaction with an already authorised mounted App. It
+is not a semantic capability and it is never a local-model tool. The two MCP
+mounts therefore have distinct audiences:
+
+| Zone 2 mount | Consumer | Published tools |
+|---|---|---|
+| `/mcp` | Zone 1 local-model orchestration | Semantic capabilities only |
+| `/mcp/app-actions` | Trusted Zone 1 App host | Only `apps.execute_action` |
+
+The mounted iframe can request only the fixed tool name with an opaque
+`action_handle` and a declared `input` object. The host, not the iframe, adds
+the active Zone 2 App-session reference, the current presentation revision and
+a newly minted Zone 1 action ID. It validates that the named
+handle belongs to the active local App instance before contacting Zone 2.
+
+Zone 2 holds the action grant server-side. It binds the grant to the principal,
+organisation, entry capability, query fingerprint, subject scope, expiry and
+revision, and maps it to a normal governed request. The iframe never receives
+or chooses a capability ID, backend cursor, subject identifier, source handle,
+session token or idempotency key.
+
+A successful action returns exactly a typed whole-tree replacement:
+
+```json
+{
+  "kind": "app.update.replace.v1",
+  "presentation_revision": 1,
+  "zone2_app": { "...": "post-obligation Prefab tree" }
+}
+```
+
+Its FastMCP `content` is explicitly empty. Zone 1 keeps any successor session
+reference and the complete current handle manifest in the private App-instance
+lifecycle. A rendered Prefab tree necessarily contains the one opaque handle
+for each visible control, but no separate handle manifest or Zone 2 session
+reference reaches the desktop wire. Zone 1 adds no conversation or model turn.
+Rejections and failures are closed, stable codes; they never fall back to raw
+governed JSON or `response_text`.
+
+There is no direct iframe-to-capability route. `apps.execute_action` is the
+only interactive App protocol. See
+[ADR 0007](../docs/adr/0007-host-only-governed-app-actions.md).
+
+---
+
+## Non-App semantic result guidance
+
+Zone 1 runs a local model with a **context window of 4096–8192 tokens**. The
+following raw-result guidance applies only to a model-selected non-App semantic
+capability. It must never be used for a completion that contains `zone2_app`.
 
 **Rule: connectors must not return unbounded collections.**
 
@@ -54,8 +141,11 @@ And the response must include:
 }
 ```
 
-The model can then request a specific page ("show me the next 5 appointments") or the Zone 1
-runtime's FastMCP Apps layer can paginate silently via `get_next_page(cursor)`.
+For a deliberately model-visible semantic list capability, the model may ask
+for a specific page. A mounted App uses a different path: the cursor remains
+server-side in the Zone 2 action grant/successor grant, while the renderer sees
+only an opaque action handle. Zone 1 never implements or calls
+`get_next_page(cursor)` on behalf of an App control.
 
 ### 3. Avoid nesting beyond one level
 
@@ -84,10 +174,11 @@ No stack traces, no database error messages, no sensitive internal state.
 
 ---
 
-## Zone 1's defensive safety net
+## Zone 1's non-App defensive safety net
 
-Zone 1 applies a `result_char_budget` (default 8000 characters) as a last-resort cap on the
-raw JSON of a tool result before it is appended to history. This cap:
+For a model-selected non-App semantic capability only, Zone 1 applies a
+`result_char_budget` (default 8000 characters) as a last-resort cap on raw JSON
+before it is appended to history. This cap:
 
 - Is **not** a compression strategy.
 - Truncates raw JSON at the byte boundary — the model receives potentially malformed JSON.
@@ -116,6 +207,20 @@ response — viable. A list of 100 items would leave essentially nothing.
 
 ## Verification
 
-Zone 2's integration test suite should include a test asserting that each list-returning
-capability's typical response (with default `limit`) serialises to fewer than 8000 characters.
-This test is cheapest to write and catches regressions before Zone 1 ever sees the data.
+Zone 2's integration test suite must assert that every App-enabled projection
+returns its rich governed/App data separately from one non-empty, at-most-1,024
+code-point observation. Tests should use canaries in the rich result (for
+example an identifier, cursor, opaque source handle and long excerpt) and prove
+that only the approved compact observation reaches the next Zone 1 inference.
+
+The non-App semantic integration test should continue to assert that a typical
+default list serialises to fewer than 8000 characters. A real synthetic Zone 2
+endpoint must be used for the cross-zone MCP contract test; do not share Zone 2
+internal test helpers with Zone 1.
+
+For an App action, assert a separate closed contract: the FastMCP result has
+empty `content`; `structured_content` is exactly a replace/rejected/failed
+App-action shape; only a replacement has a Prefab tree; the raw post-obligation
+action result never appears in content, metadata, a model request, or the
+desktop action response. A paging fixture must prove that successor cursor
+binding changes only in a Zone 2 grant, never in the renderer or Zone 1 wire.

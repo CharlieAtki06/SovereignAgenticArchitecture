@@ -205,6 +205,7 @@ Per-zone AI context (`graphify-out/graph.json`) lives in each zone's repo and is
 |---|---|
 | [ADRs](docs/adr/README.md) | Cross-zone architecture decisions that belong to neither zone alone |
 | [Local demo runbook](docs/dev/local-demo-runbook.md) | The supported desktop/headless commands, rebuild/reset lifecycle, and API/worker log diagnosis |
+| [Governed Apps reference-example plan](docs/dev/governed-apps-reference-examples-development-plan.md) | Cross-zone multi-phase plan for the synthetic NHS Care and Northstar Apps proofs, regression coverage, and safe branding evolution |
 | [Keycloak & auth testing](docs/keycloak-auth-testing.md) | How identity/Keycloak is set up, the test users, and what allow/deny to expect when driving the CLI |
 | [Demo acceptance guides](docs/demos/nhs-care.md) | NHS Care and Northstar Infrastructure Operations: profile-specific identities, safety boundaries, capability matrices, confirmation and audit verification |
 | [NHS Edge App migration guide](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/main/docs/dev/adapting-a-frontend.md) | Migrating the NHS Health App React UI onto the governed edge runtime — auth (Keycloak), clinician persona + entitlements, the `domain.action` tools, and the deferred/confirmation model |
