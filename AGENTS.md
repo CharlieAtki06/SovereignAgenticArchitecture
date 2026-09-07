@@ -7,7 +7,7 @@ This is the root envelope for a three-zone agentic architecture designed for ent
 ## The three zones
 
 **Zone 1 — Edge Runtime** (`SovereignAgenticArchitectureZoneOne`)
-Local function-calling model + LangGraph + MCP client. Discovers what Zone 2 exposes, invokes it through a governed MCP channel, and presents results through a sandboxed Flutter shell. Cannot access enterprise systems or Zone 3 directly.
+Local function-calling model + LangGraph + MCP client. Discovers what Zone 2 exposes, invokes it through a governed MCP channel, and presents results through a sandboxed Prefab surface in the Tauri desktop shell. Cannot access enterprise systems or Zone 3 directly.
 
 **Zone 2 — Governed Mediation** (`SovereignAgenticArchitectureZoneTwo`)
 The gatekeeper. Authenticates callers, evaluates policy deterministically, records every decision to an immutable audit log, executes the appropriate enterprise connector, and strips responses to only permitted fields. Not a reasoning agent — a governance runtime.
@@ -28,6 +28,13 @@ Zone 1 must never:
 - Access Zone 3 or enterprise systems without going through Zone 2
 
 Any task that appears to require crossing this boundary is a signal that something is being added to the wrong zone.
+
+For an App-enabled completion, Zone 2 sends only the compact Model Observation,
+the authorised App Presentation, and opaque lifecycle metadata. It never sends
+the Governed Outcome, `result`, `provenance`, cursor, Subject/source reference,
+or internal action target. Zone 1 must reject extra App-envelope fields. The
+normative shapes are in `docs/data-boundary-and-projection-contract.md` and
+cross-zone ADR-0008.
 
 ---
 

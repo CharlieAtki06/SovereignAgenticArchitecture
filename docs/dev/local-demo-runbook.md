@@ -12,6 +12,7 @@ Only one demo profile can use the standard local ports at a time.
 | What you want to run | Where to run it | Command |
 |---|---|---|
 | NHS desktop (normal interactive path) | root workspace | `make desktop-up-nhs` |
+| NHS desktop after a realm-definition change | root workspace | `make desktop-reset-nhs` |
 | Northstar desktop (normal interactive path) | root workspace | `make desktop-up-infrastructure` |
 | NHS headless edge + CLI path | root workspace | `make demo-up-nhs` |
 | Northstar headless edge + CLI path | root workspace | `make demo-up-infrastructure` |
@@ -49,11 +50,31 @@ desktop does not read a realm export or enable a Zone 2 plugin.
 For a quick governed check, ask:
 
 ```text
-What patients do I have?
+Open the clinical-record workspace.
 ```
 
-Then ask for Alice's appointments. The NHS capability/entitlement matrix is in
-[NHS Care](../demos/nhs-care.md).
+The expected response for `clinician-a` is an aggregate-only acknowledgement of
+2 authorised records, 79 documents and 12 marked for review, plus the secure
+Alice/Bob record selector. Do not use the old `What patients do I have?` prompt:
+bulk model-visible patient enumeration was removed in PP-4.
+
+## Run the defined feature tests
+
+The profile guides are executable demo specifications, not just capability
+catalogues:
+
+- [NHS Care PP-4 acceptance tests](../demos/nhs-care.md#defined-desktop-acceptance-tests)
+  cover the clinical-record workspace, five-page document navigation, structured
+  preview, confirmation-gated appointment booking, entitlement separation and
+  expired actions.
+- [Northstar PP-3 acceptance tests](../demos/northstar-infrastructure-operations.md#defined-desktop-acceptance-tests)
+  cover the broad shift brief, five-page Workboard, all five filters, opaque row
+  selection, crew review, confirmation-gated assignment, scope denial and
+  expired actions.
+
+Each guide gives the exact prompt, identity, UI action, fixture checkpoint and
+failure condition. Run the record/Workboard navigation before mutation tests so
+the documented fixture state remains deterministic.
 
 ## Stop, rebuild and reset
 
@@ -64,17 +85,25 @@ profile-local database and realm state:
 make desktop-down-nhs
 ```
 
-After changing Zone 2 Python, FastMCP/App, connector or compose code, rebuild
-the selected Zone 2 image before restarting the desktop:
+Every `desktop-up-*` command performs a cached build, starts prerequisites in
+an explicit order, waits for the NHS source, identity service and governed API
+readiness checks, and only then launches
+the desktop. After an ordinary Zone 2 Python, FastMCP/App, connector or compose
+change, close and restart with:
 
 ```bash
 make desktop-down-nhs
-make demo-rebuild-nhs
 make desktop-up-nhs
 ```
 
-Use the matching `*-infrastructure` commands for Northstar. `demo-rebuild-*`
-rebuilds the Zone 2 image only; it is safe and does not delete data.
+Use `make demo-rebuild-nhs` between those commands only when you deliberately
+want to force-recreate the freshly built API, worker and proof-profile source
+containers. It is safe and does not delete data. Use the matching
+`*-infrastructure` commands for Northstar.
+
+The lifecycle intentionally does not delegate `depends_on` readiness to
+Compose. This avoids an unbounded `podman-compose` condition wait while keeping
+the same entry points for Docker and Podman.
 
 After changing a committed Keycloak realm export, the realm must be imported
 into a fresh profile database. This reset is intentionally destructive, but is
@@ -86,8 +115,8 @@ make demo-reset-nhs
 make desktop-up-nhs
 ```
 
-If both Zone 2 code and realm data changed, run `make demo-rebuild-nhs` between
-the reset and the final `desktop-up-nhs`.
+If both Zone 2 code and realm data changed, the reset plus final
+`desktop-up-nhs` performs the required clean build and start.
 
 ## Logs and common diagnosis
 

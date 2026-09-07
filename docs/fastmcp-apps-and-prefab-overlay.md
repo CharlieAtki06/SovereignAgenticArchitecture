@@ -13,7 +13,7 @@ Cross-references:
 1. [What problem this solves](#1-what-problem-this-solves)
 2. [Three-zone call map](#2-three-zone-call-map)
 3. [FastMCP Apps — Zone 2 overlay builder](#3-fastmcp-apps--zone-2-overlay-builder)
-4. [The governed result envelope](#4-the-governed-result-envelope)
+4. [The projection-only App completion envelope](#4-the-projection-only-app-completion-envelope)
 5. [Zone 1 rendering pipeline](#5-zone-1-rendering-pipeline)
 6. [The sandboxed iframe](#6-the-sandboxed-iframe)
 7. [Two-layer postMessage protocol](#7-two-layer-postmessage-protocol)
@@ -214,7 +214,7 @@ private `AppInstance` lifecycle. They never travel inside the governed
 
 ---
 
-## 4. The governed result envelope
+## 4. The projection-only App completion envelope
 
 When Zone 2 processes a capability with an app overlay, the MCP `ToolResult` has three relevant channels.
 
@@ -229,13 +229,11 @@ Unicode code points. This is the only tool-derived content that may enter the
 local model's conversation history. It is not JSON-parsed and Zone 1 never
 reconstructs it from governed fields.
 
-**`structured_content`** — the governed data envelope (Zone 1 parses this):
+**`structured_content`** — the closed App Presentation envelope:
 ```json
 {
   "status": "completed",
   "request_id": "...",
-  "result": { "items": [ ... ] },
-  "provenance": { "reasoning_used": "...", "source_count": 0 },
   "zone2_app": {
     "$prefab": { "version": "0.3" },
     "view": { "type": "Div", "children": [ ... ] }
@@ -245,16 +243,30 @@ reconstructs it from governed fields.
 
 **`_meta`** — MCP metadata (separate from the governed envelope):
 ```json
-{ "zone2/app_session_id": "<uuid4>" }
+{
+  "zone2/app_session_id": "<opaque>",
+  "zone2/app_action_handles": ["<opaque>"],
+  "zone2/presentation_revision": 0
+}
 ```
 
-For App-enabled results, Zone 1 maps the channels into independent values:
+The complete governed result remains inside Zone 2. Projection-private
+top-level fields (such as cursors and view state) and row fields (such as source
+references) are typed and validated there, then used only by trusted projectors
+and server-held action grants. They are never siblings in this envelope.
+
+For App-enabled results, Zone 1 maps the two audience projections independently:
 
 ```text
 ToolResult.content                         → Model Observation → LangGraph tool turn
 structured_content.zone2_app + _meta       → App Presentation  → sandboxed renderer
-structured_content.result                  → discarded at the Zone 1 MCP seam
+Governed Outcome + Projection-Private Data → remain in Zone 2
 ```
+
+Zone 1 treats `structured_content` as a closed contract: any sibling other than
+`status`, `request_id` and `zone2_app` fails the interaction. This turns an
+accidental reintroduction of `result` or `provenance` into a visible contract
+failure rather than a silent data transfer.
 
 The App Presentation is response-scoped rather than conversation state: it is
 not placed in model history or LangGraph checkpoints. If the App is valid but
@@ -265,6 +277,8 @@ JSON for either audience. The initial desktop result contains only the local
 App instance ID, presentation revision and App tree; the Zone 2 session
 reference and handle manifest remain private host lifecycle state. See
 [ADR-0006](adr/0006-model-observation-and-app-presentation-are-independent-projections.md).
+The exact transport exclusion is defined by
+[ADR-0008](adr/0008-app-completions-carry-audience-projections-not-governed-results.md).
 
 ---
 
@@ -556,7 +570,7 @@ sequenceDiagram
     participant AD as AppActionDispatcher
     participant AG as AppActionGateway
 
-    Z2->>GW: ToolResult\ncontent = ModelObservation\n_meta = private session + handles\nstructured_content["zone2_app"] = {...}
+    Z2->>GW: ToolResult\ncontent = ModelObservation\nstructured_content = status + request_id + zone2_app\n_meta = private session + handles
     GW->>HI: ProjectedAppCompletedOutcome\nModelObservation + AppPresentation
     HI->>HI: AppInstanceRepository.create_for_result\nprivate session, revision and handles stored
     HI->>Desktop: DirectResponseResultWire\napp_instance_id + revision + app_overlay

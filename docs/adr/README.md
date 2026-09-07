@@ -11,3 +11,4 @@ These ADRs govern decisions that span both Zone 1 and Zone 2, or that define the
 | [0005](0005-demo-profiles-are-deployment-orchestration.md) | Demo profiles are deployment orchestration, not a runtime seam | Accepted |
 | [0006](0006-model-observation-and-app-presentation-are-independent-projections.md) | Model Observation and App Presentation are independent projections | Accepted |
 | [0007](0007-host-only-governed-app-actions.md) | Host-only governed App actions use a separate MCP surface | Accepted |
+| [0008](0008-app-completions-carry-audience-projections-not-governed-results.md) | App completions carry audience projections, not governed results | Accepted |

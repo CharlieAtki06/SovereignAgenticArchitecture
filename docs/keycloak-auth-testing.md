@@ -58,7 +58,7 @@ need to be combined in one local deployment.
 | Start full Northstar demo | root: `make demo-up-infrastructure` | supported |
 | Stop either desktop demo | root: matching `desktop-down-*` | supported; preserves profile data |
 | Inspect API / worker logs | root: matching `demo-logs-*` / `demo-worker-logs-*` | supported; use worker logs for asynchronous capability/App failures |
-| Rebuild Zone 2 after source changes | root: matching `demo-rebuild-*`, then stop/start the selected profile | supported; preserves data |
+| Force-recreate Zone 2 after a cached build | root: matching `demo-rebuild-*` | supported; preserves data |
 | Reset either profile after realm-export changes | root: matching `demo-reset-*`, then start it | supported; reset is destructive |
 | Start governed layer only | Zone 2: matching `make demo-up-*` | supported |
 | Exercise a selected profile | Zone 1: `uv run zone1 chat` with that profile's explicit `--issuer` | supported |
@@ -77,7 +77,7 @@ before starting another.
 | Demo | Root command | Realm / issuer | Test identity | Expected governed work |
 |---|---|---|---|---|
 | NHS care | `make demo-up-nhs` | `nhs-demo` / `http://localhost:8080/realms/nhs-demo` | `clinician-a` / `password` | patient and appointment capabilities under `direct_care` |
-| Northstar Infrastructure Operations | `make demo-up-infrastructure` | `northstar-infrastructure-demo` / `http://localhost:8080/realms/northstar-infrastructure-demo` | `operator-a` / `password` | synthetic work orders under `asset_maintenance` |
+| Northstar Infrastructure Operations | `make demo-up-infrastructure` | `northstar-infrastructure-demo` / `http://localhost:8080/realms/northstar-infrastructure-demo` | `operator-a` or `operator-north` / `password` | synthetic work orders under `asset_maintenance`; North-only denial proof with `operator-north` |
 
 Named commands avoid manual module, realm, issuer and network settings. The root
 Makefile starts a Zone 2 compose overlay, then attaches the generic edge to that
@@ -139,17 +139,19 @@ not start the containerised Zone 1 edge, so do not first run the matching
 make desktop-down-nhs
 ```
 
-Zone 2 code, connector, FastMCP/App or compose changes are baked into the
-profile image. Rebuild and restart before retesting them:
+`desktop-up-*` performs a cached profile build and an explicitly ordered,
+bounded startup, so ordinary Zone 2 code, connector, FastMCP/App or compose
+changes need only a stop and start:
 
 ```bash
 make desktop-down-nhs
-make demo-rebuild-nhs
 make desktop-up-nhs
 ```
 
-The matching infrastructure commands follow the same pattern. The detailed,
-copyable workflow is maintained in the [local demo runbook](dev/local-demo-runbook.md).
+Use `make demo-rebuild-nhs` before the start only when a force-recreate is
+needed. The matching infrastructure commands follow the same pattern. The
+detailed, copyable workflow is maintained in the
+[local demo runbook](dev/local-demo-runbook.md).
 
 ## CLI testing
 
@@ -186,7 +188,7 @@ Use explicit capability requests because the local model is small:
 | NHS | `Call appointments.book with subject_id patient-1 and date 2026-09-10 and reason review` | confirmation before an audited write |
 | Northstar | `Call maintenance.list_work_orders` | synthetic `CONFIDENTIAL` work-order list |
 | Northstar | `Call maintenance.get_work_order with work_order_id WO-DEMO-104` | synthetic item detail and structural overlay |
-| Northstar | `Call maintenance.assign_work_order with work_order_id WO-DEMO-104 and crew_code CREW-DEMO-7` | confirmation, then audited administrative assignment only; never real dispatch |
+| Northstar | `Call maintenance.assign_work_order with work_order_id WO-DEMO-104 and crew_reference North Response Alpha` | confirmation, then audited administrative assignment only; never real dispatch |
 
 Northstar contains no real facilities, coordinates, telemetry, topology, control
 values or operational instructions.
@@ -239,7 +241,7 @@ Zone 2 services and the desktop's own local sidecar, never the containerised edg
 | Port already in use | Run the matching root `make demo-down-*`; only one profile binds default ports. |
 | Realm edit has no effect | Run that profile's `demo-reset-*`, then the matching `desktop-up-*` or `demo-up-*`; imports skip existing realms. |
 | A discovered tool or App result fails | Keep `make demo-worker-logs-<profile>` open, reproduce the request, and inspect its worker trace; the API log is for admission/authentication. |
-| Zone 2 source fix has no effect | Run `make demo-rebuild-<profile>`, then stop/start the matching profile. |
+| Zone 2 source fix has no effect | Stop the profile, run `make demo-rebuild-<profile>`, then start the matching desktop. |
 | `401` from Zone 1 | Check `ZONE1_HOST_SECRET` / `--secret`; this is independent of OIDC login. |
 | Token issuer mismatch | Match the CLI `--issuer` exactly to the running profile. Do not patch Zone 1 source or Keycloak manually. |
 | No expected capability | Confirm `make ps`, then inspect the selected profile's `demo-logs-*`; profiles load different modules. |

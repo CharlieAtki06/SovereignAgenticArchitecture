@@ -4,6 +4,10 @@
 
 Accepted.
 
+> **Amended by ADR-0008.** App-enabled completions no longer carry a governed
+> `result` for Zone 1 to discard. Their closed `structured_content` envelope
+> contains only `status`, `request_id` and `zone2_app`.
+
 ## Context
 
 An App-enabled Zone 2 capability already produces two useful representations of
@@ -40,10 +44,22 @@ valid assistant → tool sequence. It contains no App presentation, app-session
 reference, governed result or rejected observation. The fallback tool and
 assistant content themselves are the fixed acknowledgement.
 
+If the Model Observation is valid and has already been appended, but the local
+edge model emits a malformed or empty continuation while synthesising its final
+reply, Zone 1 likewise retains the captured App and returns the fixed safe
+acknowledgement. The valid compact observation remains the tool turn; only the
+invalid assistant continuation is replaced. This recovery applies only after a
+projected App completion has been captured. Malformed initial model output and
+malformed continuations without an App remain interaction failures.
+
 The App Presentation is response-scoped. It is not stored in LangGraph state,
 conversation turns, model requests, checkpoints, generic event payloads, or
 generic assistant text. The opaque App session reference may be retained only
 in Zone 1's App-instance lifecycle state.
+
+The raw governed outcome and projection-private routing values remain in Zone 2.
+They are absent from the App-enabled MCP completion, not merely ignored by the
+Zone 1 mapper. See ADR-0008 for the exact wire envelopes.
 
 ## Consequences
 
@@ -55,6 +71,8 @@ in Zone 1's App-instance lifecycle state.
   local App-instance ID and presentation revision. The Zone 2 App-session
   reference remains private App-instance lifecycle state rather than a desktop
   field.
+- An unreliable small-model paraphrase cannot replace a successfully rendered
+  governed App with a technical `MODEL_OUTPUT_INVALID` transcript message.
 - Existing non-App semantic capability completions retain an explicit local
   model-disclosure contract. The obsolete direct backend/App invocation route is
   removed by PP-2 rather than retained as a compatibility path.

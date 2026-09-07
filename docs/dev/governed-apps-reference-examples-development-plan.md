@@ -161,12 +161,12 @@ follow older documents when they disagree with the running code.
 
 | Area | Current implementation fact | Planning consequence |
 |---|---|---|
-| Dual projection | Zone 2 creates `ToolResult.content` for the compact projection and `structured_content` for governed/App data. Zone 1 maps an App completion into `ModelObservation` and response-scoped `AppPresentation`, discarding the raw governed result before LangGraph. | PP-1 verification gates remain a safety blocker before a document workspace. |
+| Dual projection | Zone 2 creates `ToolResult.content` for the compact model projection and a closed `structured_content` envelope containing only `status`, `request_id` and `zone2_app`. The governed result and projection-private routing fields never enter Zone 1. | ADR-0008 and the strict producer/consumer contract are mandatory regression gates. |
 | Direct App calls | The earlier arbitrary direct-capability relay is an unused PoC path. | PP-2 removes it and makes the typed host-only App Action/Update interface the sole interactive App route. |
 | Pagination | NHS has a signed-cursor backend capability and app-session metadata, but the generic list has no action nodes. | PP-2 builds one reusable interactive primitive. |
 | Northstar prompt | The source prompt already tells the agent not to ask for a district for a broad shift question. | First inspect deployed prompt discovery/cache; do not add a duplicate prompt file. |
 | Northstar fixtures | There are only two synthetic work orders. | PP-3 adds a realistic enough long-list proof corpus. |
-| NHS documents | No document viewer or synthetic `DocumentReference` corpus is implemented. | PP-3 creates a structured, synthetic-only workspace. |
+| NHS documents | No document viewer or synthetic `DocumentReference` corpus is implemented. | PP-4 creates a structured, synthetic-only workspace. |
 | Branding | v1 is strict, local and host-controlled, but the manifest is limited and some docs/runtime assumptions have drifted. | PP-5 expands only presentation configuration. |
 | Zone 3 | Current work is an incomplete implementation of a much stronger planned design. | Keep it out of this delivery path; add protective regression coverage only. |
 
@@ -202,15 +202,18 @@ LegacyCompletedOutcome
 Rules:
 
 - `model_observation` originates only from Zone 2's MCP `ToolResult.content`.
-- `presentation` originates only from Zone 2's post-obligation structured content
+- `presentation` originates only from Zone 2's post-obligation `zone2_app`
   and opaque app-session metadata.
 - LangGraph may serialise only `model_observation` into a `ConversationTurn`.
-- A raw governed result is discarded after mapping an App-enabled completion. It
-  must not be written to model history, included in generic assistant text,
-  handed to the renderer, or re-projected in Zone 1.
+- A raw governed result and projection-private top-level/row data are absent from
+  the App-enabled MCP completion. Zone 1 rejects extra structured siblings rather
+  than discarding them.
 - A valid App with invalid model text becomes `AppOnlyCompletedOutcome`: Zone 1
   renders the App, skips the second inference, and returns the fixed safe
   acknowledgement. A malformed App envelope fails closed.
+- If a valid App and Model Observation are already captured but the edge model's
+  continuation is empty or malformed, Zone 1 retains the App and returns the
+  same fixed acknowledgement. Initial model failures remain failures.
 - `LegacyCompletedOutcome` is the temporary, non-App exception only; a result
   containing `zone2_app` must never enter that branch.
 
@@ -388,8 +391,9 @@ Named regression selectors:
 2. Require an explicit compact projector for any capability whose rich result can
    be large or contains confidential fields; fail construction/tests if a protected
    overlay has no model projection.
-3. Keep `structured_content` for governed/App data and preserve the overlay/session
-   metadata already required by the host.
+3. Emit a closed App `structured_content` envelope containing only `status`,
+   `request_id`, and `zone2_app`; retain governed and Projection-Private data in
+   Zone 2 and keep lifecycle values in MCP metadata.
 4. Ensure the compact projection itself contains no raw document excerpt, table,
    cursor, patient name, date of birth, direct identifier or arbitrary free text
    unless a capability has an explicit, reviewed exception.
@@ -582,6 +586,56 @@ sensitive synthetic domain.
   confirmation/action-audit path.
 - No work-queue browsing action increases local-model history.
 
+#### Implementation status (5 September 2026)
+
+Implementation is present but PP-3 remains open until the configured release
+endpoint and desktop Playwright gates run in an environment that permits local
+listeners.
+
+- Zone 2 now has the deep `NorthstarScenario` domain module, its 50-record
+  `northstar-workboard-v1` fixture, Work Order subject resolver, restrict-only
+  Operating Area policy, signed query cursors, v2 semantic capabilities and the
+  three internal App targets. Design details are in
+  `SovereignAgenticArchitectureZoneTwo/docs/northstar-workboard.md`.
+- The separate Northstar App Action Catalogue drives open, five fixed filters,
+  previous/next, visible-row detail, crew options and both Back transitions.
+  The generic `PaginatedListFactory` gained only reusable fixed-filter controls;
+  Zone 1 gained no Northstar runtime branch.
+- Zone 1's generic prompt now distinguishes user-facing domain references from
+  forbidden technical identifiers. Its release test
+  `test_real_northstar_app_navigation_stays_on_the_host_only_surface` performs
+  open, page, filter, detail and crew transitions using only the two public MCP
+  mounts and imports no Zone 2 code.
+- Desktop has a test-only Northstar replacement fixture and Playwright tracer,
+  plus a generic focus-restoration regression in `PrefabOverlayPanel`. The
+  production host continues to treat every Prefab tree as opaque.
+- Named Zone 2 proofs include
+  `test_northstar_scenario_has_the_documented_fixture_distribution`,
+  `test_all_areas_shift_brief_is_default_and_includes_both_districts`,
+  `test_cursor_replay_across_a_different_scope_fails_closed`,
+  `test_detail_and_crew_views_are_bound_to_the_visible_queue_page`,
+  `test_northstar_app_state_machine_preserves_hidden_navigation_context`, and
+  `test_northstar_app_navigation_targets_are_absent_from_model_tools`.
+- The affected Zone 2 suite currently passes 90 tests with Ruff and mypy clean.
+  Zone 1 prompt/release tests pass locally (release cases remain deselected
+  without endpoint variables); the affected desktop suite passes 23 Vitest
+  tests, TypeScript and dependency lint. The targeted Playwright test is
+  authored but local execution is blocked by `listen EPERM` on
+  `127.0.0.1:1420` in this workspace.
+
+**Productisation direction:** PP-3 deliberately encodes the Northstar
+Integration Definition in Python (`actions.py`, labels, views, capabilities and
+module composition) to make the proof deterministic. That code is independent
+of the in-process fixture choice: replacing the fixture with a real upstream
+API would replace the Connector, not automatically remove the App declarations.
+A later administration-plane phase must replace both NHS and Northstar profile
+packages with validated, versioned and audited Integration Definition data.
+Only allowlisted generic projection/binding strategies remain executable code;
+administrators must not be able to upload Python, JavaScript, arbitrary Prefab,
+credentials or policy-bypass expressions. The proof packages can be deleted
+once that data-driven activation path has equivalent contract and regression
+coverage.
+
 ### PP-4 — NHS Care synthetic clinical-record workspace proof profile
 
 **Preconditions:** PP-1, PP-2 and PP-3 are complete. The NHS example reuses the
@@ -637,6 +691,94 @@ synthetic record review, without claiming a production patient-record viewer.
 - Its script includes a positive path, a scope-denial path and an expiry/tamper
   path.
 - No patient/document browsing action increases local-model history.
+
+#### Implementation status (2026-09-05)
+
+Implementation is present but PP-4 remains **open** until PP-3's configured
+cross-zone endpoint and authored Playwright gates, plus the equivalent NHS live
+gates, run successfully in an environment that permits local listeners.
+
+- Zone 2 ADR-0027 now records one-to-many outcome-derived grants, strict
+  marker/grant parity, the 64-grant bound, and opaque row selection.
+- Northstar row selection now uses the same empty-input per-row grant contract.
+- The mock-FHIR `nhs-record-workspace-v1` corpus provides 42/37/33 documents
+  with 7/5/4 review indicators over HTTP.
+- `patients.resolve` replaces bulk `patients.list`; `records.open_workspace` is
+  model-visible while record index/page/preview targets are internal.
+- [Zone 2 NHS workspace design](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/nhs-record-workspace.md)
+  documents the state machine, entitlement, cursor, preview and Integration
+  Definition seams.
+- Named regressions include
+  `test_collection_binding_issues_distinct_server_bound_row_grants`,
+  `test_opaque_row_action_sends_handle_with_empty_input`,
+  `test_document_model_projection_excludes_title_author_excerpt_and_canary`,
+  `test_preview_back_returns_to_originating_page`, and
+  `test_resolution_does_not_enumerate_demographics`, plus
+  `test_every_transition_reauthorises_current_subject_scope`.
+- Zone 1 contains only test-harness/release fixtures for NHS; production runtime,
+  HTTP, MCP and desktop interfaces remain profile-neutral.
+- The PP-4-focused Zone 2 suite passes 89 tests plus nine Redis App-session
+  persistence tests; the relevant Zone 1
+  orchestration/action/firewall suite passes 43 tests; the targeted desktop
+  host/fixture suite passes 26 Vitest tests with TypeScript and dependency checks
+  clean. The configured release suite collects three real-endpoint cases and
+  skips when credentials are absent.
+- The remaining live evidence is deliberately not waived: Testcontainers cannot
+  start here because no Docker socket is available, while Playwright cannot bind
+  its Vite listener (`listen EPERM` on `127.0.0.1:1420`). Repository-wide quality
+  also reports pre-existing, unrelated lint/type/import/Rust-format failures.
+  PP-4 therefore remains open rather than claiming release completion.
+
+#### PP-4R follow-on — appointment resolution, App drill-down and checkpoint hardening
+
+PP-4R is implemented through the local contract/unit layers but remains **open**
+pending dependency-lock synchronization and configured endpoint/desktop gates.
+
+- `appointments.get_details` v2 replaces source-ID input with the closed
+  `next` / `previous` / `date_time` / `reference` selector language. Invalid,
+  zero-match and multiple-match selections are governed business outcomes.
+- `appointments.list` v2 returns ten of eleven active future appointments.
+  Internal page/detail capabilities and four separately registered App actions
+  provide opaque row drill-down and exact Back navigation with zero model turns.
+- `nhs-appointment-schedule-v2` provides two fulfilled historical, eleven active
+  future, and one cancelled appointment per synthetic Subject from one mutable,
+  launch-clock-relative mock-FHIR store. The mock-FHIR image contract now proves
+  both fixture modules are copied into the container.
+- Capability string enums now traverse Zone 2 SDK → MCP JSON Schema → Zone 1
+  anti-corruption mapping → local-model schema. Zone 1 rejects out-of-enum model
+  calls before transport while Zone 2 remains authoritative.
+- The common Zone 2 request handler now validates post-obligation results before
+  completion. Public fields, projection-private top-level fields and
+  projection-private list-row fields form one maximum contract; only the public
+  fields are published. Undeclared row or top-level metadata produces
+  `OUTPUT_CONTRACT_VIOLATION` consistently across transports.
+- Zone 1 diagnostic prints were replaced with PHI-safe structured events carrying
+  only interaction/action correlation, capability, ordinal/request correlation
+  where available, and categorical outcomes.
+- [Zone 2 appointment design](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/nhs-appointment-workflow.md)
+  documents the selector, source clock, App state machine, authorization and
+  containment rules. [Zone 1 ADR-0034](../../../SovereignAgenticArchitectureZoneOne/docs/adr/0034-langgraph-1-checkpoints-use-exact-symbol-allowlists.md)
+  accepts LangGraph 1.x with no pickle fallback and exact-symbol checkpoint
+  allowlists.
+- The focused Zone 2 request/projection/NHS/Northstar slice passes 94 tests and
+  source type-checking passes all 203 modules. The focused Zone 1
+  orchestration/MCP/schema/App-isolation slice passes 61 tests; the checkpoint
+  compatibility slice passes against the currently installed legacy package by
+  proving the volatile demo disables checkpointing instead of constructing its
+  permissive serializer.
+- The Zone 1 dependency pins are updated to LangGraph 1.2.11, checkpoint 4.2.0,
+  SQLite checkpoint 3.1.1 and LangChain Core 1.4.7+. This execution environment
+  cannot regenerate `uv.lock`: its host uv cache is inaccessible and isolated
+  network resolution is unavailable. Run `uv lock && uv sync --all-extras` in a
+  normal development shell before recording the LangGraph 1.x restart tests.
+- Container-backed tests remain blocked here by the unavailable Docker/Podman
+  socket. Repository-wide Zone 2 lint also reports unrelated pre-existing test
+  formatting findings outside PP-4R. These gates are not waived.
+
+PP-4R closes only after the real synthetic endpoint proves semantic next,
+previous, tomorrow-at-10, reference selection, opaque row detail/Back, booking
+read-after-write, foreign-handle denial, zero navigation model turns, hardened
+SQLite restart, and no Zone 3 invocation.
 
 ### Deferred follow-on — Explicit context promotion and App hardening
 

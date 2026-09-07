@@ -31,7 +31,7 @@ ZONE2 := $(COMPOSE) -f $(ZONE2_DIR)/docker-compose.yml
 .PHONY: help up down ps logs edge-logs zone1-up zone1-down zone1-rebuild zone2-up zone2-down \
         demo-up-nhs demo-down-nhs demo-rebuild-nhs demo-logs-nhs demo-worker-logs-nhs demo-reset-nhs \
         demo-up-infrastructure demo-down-infrastructure demo-rebuild-infrastructure demo-logs-infrastructure demo-worker-logs-infrastructure demo-reset-infrastructure \
-        desktop-up-nhs desktop-down-nhs desktop-up-infrastructure desktop-down-infrastructure \
+        desktop-up-nhs desktop-down-nhs desktop-reset-nhs desktop-up-infrastructure desktop-down-infrastructure \
         test-demo-orchestration
 
 help: ## Show this help
@@ -95,6 +95,11 @@ desktop-up-nhs: assert-no-container-edge ## Start NHS Zone 2 services and launch
 
 desktop-down-nhs: ## Stop NHS services started for the desktop path
 	$(MAKE) -C $(ZONE2_DIR) demo-down-nhs
+
+desktop-reset-nhs: assert-no-container-edge ## Reset synthetic NHS state, rebuild services, and launch the desktop
+	$(MAKE) demo-reset-nhs
+	$(MAKE) -C $(ZONE2_DIR) demo-rebuild-nhs
+	$(MAKE) -C $(ZONE1_DIR) desktop-dev-governed DEPLOYMENT_POLICY=nhs ZONE1_CAPABILITY_SERVER_URL=http://127.0.0.1:8000/mcp
 
 desktop-up-infrastructure: assert-no-container-edge ## Start Northstar services and launch its desktop
 	$(MAKE) -C $(ZONE2_DIR) demo-up-infrastructure

@@ -14,11 +14,15 @@ different consumers and must never be reconstructed from one another.
 |---|---|---|
 | Exactly one FastMCP `ToolResult.content` text block | Zone 1 model history | `ModelObservation`: non-empty and at most 1,024 Unicode code points. |
 | `structured_content.zone2_app` plus the opaque app-session reference | The authorised local App renderer | `AppPresentation`: opaque renderer data; it is not model context. |
-| `structured_content.result` and other governed fields | Neither Zone 1 model history nor generic App host state | Discarded by Zone 1 after it maps an App-enabled completion. |
+| Governed result and projection-private top-level/row fields | Zone 2 projectors and server-held grants only | Never serialized in an App-enabled completion. |
 
 Zone 2 owns policy, response limiting, projector content, App structure and audit.
 Zone 1 is an anti-corruption mapper and generic local host: it does not inspect
 domain fields, create a projection, reproduce policy, or import Zone 2 source.
+
+The App-enabled `structured_content` envelope is closed and contains exactly
+`status`, `request_id` and `zone2_app`. Zone 1 rejects extra siblings, including
+`result` and `provenance`, so a producer regression fails closed.
 
 Zone 1 validates the two projections independently. If the App envelope is
 invalid, Zone 1 fails the interaction closed and renders no raw structured
@@ -38,8 +42,10 @@ enter LangGraph state, session turns, checkpoints, generic event payloads or
 model prompts. Log only the capability ID, observation failure category and
 length; never the observation text or governed/App payload.
 
-This is the PP-1 contract defined by
-[ADR 0006](../docs/adr/0006-model-observation-and-app-presentation-are-independent-projections.md).
+This is the projection firewall defined by
+[ADR 0006](../docs/adr/0006-model-observation-and-app-presentation-are-independent-projections.md)
+and strengthened at the transport boundary by
+[ADR 0008](../docs/adr/0008-app-completions-carry-audience-projections-not-governed-results.md).
 A completion containing `zone2_app` must never take a generic raw-result
 branch. The old direct backend/App route is removed; non-App semantic
 capabilities have their own explicitly bounded model-disclosure contract.
@@ -208,10 +214,11 @@ response — viable. A list of 100 items would leave essentially nothing.
 ## Verification
 
 Zone 2's integration test suite must assert that every App-enabled projection
-returns its rich governed/App data separately from one non-empty, at-most-1,024
-code-point observation. Tests should use canaries in the rich result (for
-example an identifier, cursor, opaque source handle and long excerpt) and prove
-that only the approved compact observation reaches the next Zone 1 inference.
+keeps its rich governed data inside Zone 2, returns a permitted App tree, and
+returns one non-empty, at-most-1,024-code-point observation. Tests should place
+canaries in governed top-level and row-private fields (for example an identifier,
+cursor, opaque source handle and long excerpt) and prove they are absent from
+the complete MCP response received by Zone 1.
 
 The non-App semantic integration test should continue to assert that a typical
 default list serialises to fewer than 8000 characters. A real synthetic Zone 2

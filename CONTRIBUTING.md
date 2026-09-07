@@ -30,6 +30,13 @@ Zone 1 and Zone 2 are connected exclusively through Zone 2's MCP server. This is
 
 Any change that touches this boundary requires coordinated PRs in both repos. Open both PRs at the same time and link them to each other. The Zone 2 change (server-side) should be merged first; the Zone 1 change (client-side) second.
 
+Read the [data boundary and projection contract](docs/data-boundary-and-projection-contract.md)
+before changing MCP results or Apps. App-enabled `structured_content` is a
+closed `{status, request_id, zone2_app}` envelope. The producer must not send a
+governed `result` or Projection-Private Field, and the consumer must reject
+unknown siblings. Contract PRs must include producer and consumer canary tests
+that inspect the complete MCP response.
+
 ---
 
 ## PR conventions

@@ -1,6 +1,6 @@
 # Sovereign Agentic Architecture
 
-[Zone 1 — Edge Runtime](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne) · [Zone 2 — Governed Layer](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo) · [ADRs](docs/adr/README.md) · [Contributing](CONTRIBUTING.md)
+[Zone 1 — Edge Runtime](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne) · [Zone 2 — Governed Layer](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo) · [Data boundary contract](docs/data-boundary-and-projection-contract.md) · [ADRs](docs/adr/README.md) · [Contributing](CONTRIBUTING.md)
 
 ---
 
@@ -46,6 +46,13 @@ flowchart LR
 ```
 
 **The boundary that must never be crossed:** Zone 1 consumes Zone 2 exclusively through its published MCP interface. Zone 1 must never import Zone 2 source code, call Zone 2's internal Python functions, or bypass the MCP transport for any reason.
+
+For App-enabled results, this boundary is also a data-minimisation boundary:
+Zone 1 receives only a compact Model Observation, an authorised App
+Presentation, and opaque lifecycle metadata. The Governed Outcome, source
+references, Subject references, and cursors remain in Zone 2. See the
+[data boundary and projection contract](docs/data-boundary-and-projection-contract.md)
+for the exact envelopes and failure rules.
 
 ---
 
