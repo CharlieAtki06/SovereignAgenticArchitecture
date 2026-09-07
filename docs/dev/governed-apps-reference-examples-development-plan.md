@@ -636,6 +636,13 @@ credentials or policy-bypass expressions. The proof packages can be deleted
 once that data-driven activation path has equivalent contract and regression
 coverage.
 
+That follow-on is now defined by the Zone 2
+[Integration Definition SDK v2 reference architecture](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-sdk-v2-reference-architecture.md)
+and its
+[multi-phase development plan](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-sdk-v2-development-plan.md).
+Those documents preserve the cross-zone App envelope in this roadmap; they do
+not move definition authoring, compilation or activation into Zone 1.
+
 ### PP-4 — NHS Care synthetic clinical-record workspace proof profile
 
 **Preconditions:** PP-1, PP-2 and PP-3 are complete. The NHS example reuses the
