@@ -643,6 +643,60 @@ and its
 Those documents preserve the cross-zone App envelope in this roadmap; they do
 not move definition authoring, compilation or activation into Zone 1.
 
+**IDV2-0 baseline status (2026-09-07):** Zone 2 now contains the accepted
+authoring-SPOT, hybrid-persistence and administration-authority decisions, an
+architecture-protected empty `integration_administration` context, and reviewed
+metadata-only NHS/Northstar v1 characterization manifests. Runtime authority is
+unchanged and remains with legacy `UseCaseModule.register()`. The detailed
+evidence and remaining Podman-backed completion gate are recorded in the Zone 2
+[implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md)
+and the IDV2-0 section of the
+[development plan](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-sdk-v2-development-plan.md).
+
+**IDV2-1 compiler-tracer status (2026-09-07):** Zone 2 now has a strict JSON
+authoring adapter, immutable typed `IntegrationDefinitionV2` SPOT, installed
+platform contract manifest and pure deterministic compiler producing separate
+compiled snapshot values. The compiler is isolated from FastAPI, ORM, Prefab,
+plugins, bootstrap and live adapters; its output is not installed. Legacy
+`UseCaseModule.register()` therefore remains the only runtime authority. The
+closed first grammar, safe error catalogue and three-digest construction are
+carried forward in the Zone 2
+[authoritative v2 capability grammar](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-minimal-grammar.md).
+The root roadmap links that evidence rather than duplicating its evolving
+Zone 2 contract. IDV2-1 remains implemented but not marked complete until the
+inherited container-backed aggregate quality gate is green.
+
+**IDV2-2 capability-contract status (2026-09-07):** Zone 2 now implements the
+complete current capability, governance and maximum-result vocabulary, exact
+installed connector-operation compatibility, stable model-discovery values and
+a runtime-neutral result evaluator. The evaluator is the sole v2 boundary that
+accepts connector-shaped mappings and returns distinct immutable public and
+Projection-Private values; model and App projection inputs have no private
+accessor. Test-only characterization proves the NHS and Northstar capability
+catalogues are representable, but no compiled artefact is installed and legacy
+registration remains the only runtime authority. The authoritative contract is
+the Zone 2 [v2 capability grammar](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-minimal-grammar.md),
+with measured gates in Zone 2
+[implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+The aggregate container-backed gate remains a completion prerequisite; this
+root document deliberately does not duplicate the evolving field grammar.
+
+**IDV2-3 presentation-contract status (2026-09-08):** Zone 2 now compiles
+approved presentation bindings, bounded public-only Model Observation
+strategies and fixed-precedence static prompt definitions into three separate
+immutable catalogues. The generic Prefab adapter cannot receive
+Projection-Private binding context, and the projection-only MCP helper cannot
+receive a Governed Outcome. Test-only characterization represents the NHS and
+Northstar list, detail, preview, confirmation and metric families without a
+profile branch in generic runtime code. These artefacts remain inactive and
+legacy registration remains authoritative. See the Zone 2
+[authoritative v2 grammar](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-minimal-grammar.md),
+[Integration author guide](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-presentation-author-guide.md)
+and
+[measured implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+The locked Prefab/FastMCP dependency rerun and inherited container-backed
+quality gate remain open; this root roadmap does not duplicate their details.
+
 ### PP-4 — NHS Care synthetic clinical-record workspace proof profile
 
 **Preconditions:** PP-1, PP-2 and PP-3 are complete. The NHS example reuses the
