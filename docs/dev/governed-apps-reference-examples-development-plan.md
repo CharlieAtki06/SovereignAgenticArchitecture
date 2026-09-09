@@ -721,6 +721,39 @@ Focused non-container tests pass; the Podman/PostgreSQL and inherited locked-
 dependency aggregate gates remain open and are recorded, without duplicating
 their Zone 2 details, in the linked implementation status.
 
+**IDV2-7 runtime-activation status (2026-09-09):** Zone 2 now implements an
+explicit process-wide choice between legacy module authority and one persisted
+active snapshot. The active path installs a complete immutable catalogue set
+from definition-owned data plus deployment-approved adapter bundles, fences new
+work whenever PostgreSQL and the local generation diverge, and pins requests,
+confirmations and App sessions to their exact starting generation. A dynamic
+FastMCP Provider serves only compiled model tools/prompts; App actions remain on
+the separate host-only surface and the Zone 1 wire is unchanged. NHS and
+Northstar remain on the default legacy path. The normative detail is in the
+Zone 2 [runtime activation reference](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-runtime-activation.md),
+[ADR-0033](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0033-database-authoritative-runtime-catalogue-convergence.md)
+and [implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+Aggregate dependency, PostgreSQL, real-endpoint and cross-zone gates remain open
+and are intentionally not duplicated here.
+
+**IDV2-8 authoring/seed status (2026-09-09):** Zone 2 now provides a
+non-privileged Python facade, canonical Definition/seed JSON projections and a
+strict controlled seed importer. Every route converges on the same immutable
+`IntegrationDefinitionV2` and shared Draft lifecycle; a detached signature
+establishes provenance only and cannot validate, publish or activate. Unsigned,
+inactive NHS and Northstar example packages are checked in and compiled in CI,
+but both profiles remain on `legacy_modules`. The exact envelope, authority,
+idempotency, persistence and audit rules are in the Zone 2
+[seed import guide](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-seed-import.md),
+[Python authoring guide](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-python-authoring.md),
+[ADR-0034](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0034-definition-seed-provenance-and-draft-only-import.md)
+and [implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+The examples now include the complete reviewed 15-relationship NHS and
+21-relationship Northstar App-action graphs, with Back state held in Navigation
+Context rather than connector results. The remaining IDV2-4 runtime-behaviour
+and environment-backed aggregate gates remain open; this root roadmap
+intentionally does not duplicate their evolving detail.
+
 ### PP-4 — NHS Care synthetic clinical-record workspace proof profile
 
 **Preconditions:** PP-1, PP-2 and PP-3 are complete. The NHS example reuses the
