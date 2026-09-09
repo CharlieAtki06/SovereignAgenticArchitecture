@@ -697,6 +697,30 @@ and
 The locked Prefab/FastMCP dependency rerun and inherited container-backed
 quality gate remain open; this root roadmap does not duplicate their details.
 
+**IDV2-4/5 seam status (2026-09-08):** Zone 2 now has the isolated ten-row
+compiled opaque-action tracer and the explicit Reasoning Disclosure compiler/
+runtime seam. Reasoning tools are a separate deny-by-default catalogue;
+registered/public capabilities are not implicitly exposed, server routing
+inputs remain bound, and transformed outputs are bounded. NHS and Northstar
+remain explicitly denied to Zone 3. The accepted Zone 2 decision and security
+analysis are [ADR-0031](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0031-explicit-reasoning-disclosures-and-runtime-catalogue-port.md)
+and the [Reasoning Disclosure threat model](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/security/reasoning-disclosure-threat-model.md).
+Compiled snapshots remain inactive and the inherited aggregate gates remain
+open; detailed evidence stays in the linked Zone 2 implementation status.
+
+**IDV2-6 lifecycle/persistence status (2026-09-09):** Zone 2 now implements the
+inactive Integration Administration lifecycle: immutable Draft revisions,
+exact compiler evidence, four-eyes publication, structurally checked CAS
+activation/rollback, canonical PostgreSQL artefacts and a generic non-request
+activity audit identity. SQLAlchemy and JSONB mappings remain inside the Zone 2
+infrastructure adapter; no snapshot pointer is read by live bootstrap and the
+cross-zone MCP contract is unchanged. The normative implementation detail is in
+the Zone 2 [lifecycle and persistence reference](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-lifecycle-and-persistence.md)
+and [ADR-0032](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0032-generic-activity-audit-envelope.md).
+Focused non-container tests pass; the Podman/PostgreSQL and inherited locked-
+dependency aggregate gates remain open and are recorded, without duplicating
+their Zone 2 details, in the linked implementation status.
+
 ### PP-4 — NHS Care synthetic clinical-record workspace proof profile
 
 **Preconditions:** PP-1, PP-2 and PP-3 are complete. The NHS example reuses the

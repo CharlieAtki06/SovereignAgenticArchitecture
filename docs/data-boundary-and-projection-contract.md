@@ -61,7 +61,12 @@ flowchart TB
 Zone 3 is not enabled by the NHS or Northstar proof profiles. If enabled for a
 future capability, it is a connector path behind Zone 2 policy. Neither Zone 1
 history nor App browsing content may be forwarded to it implicitly. The
-capability must declare and enforce its own Zone 3 projection contract.
+capability must reference an exact Zone 2 Reasoning Invocation Disclosure;
+every model tool and value must independently pass its referenced Tool
+Disclosure, trusted transformation and budget. Capability registration, MCP
+visibility and public output fields confer no Zone 3 model visibility. The
+normative internal seam is Zone 2
+[ADR-0031](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0031-explicit-reasoning-disclosures-and-runtime-catalogue-port.md).
 
 ## Exact initial App completion
 
@@ -133,13 +138,15 @@ All three scopes form the maximum connector-result contract and are validated
 after obligations, before successful completion. Undeclared fields fail with
 `OUTPUT_CONTRACT_VIOLATION`. Public and private row names must be disjoint, and
 private row fields are legal only on a list result. Private does not mean
-untyped or “hidden in the UI”; it means server-only and absent from transport.
+untyped or “hidden in the UI”; it means server-only and absent from transport
+and reasoning projection types.
 
 For an authorised Zone 1 request, role-based public-field limiting preserves
 the declared Projection-Private fields inside the Zone 2 pipeline so trusted
-projectors can still issue grants. Zone 3 field limiting never preserves those
-private values: a cloud-reasoning connector receives only its explicitly
-declared public allowlist.
+projectors can still issue grants. A Zone 3 reasoning model has no
+Projection-Private accessor: it receives only fields selected by an exact Tool
+Disclosure after trusted transformation and bounds. Public schema membership
+alone is insufficient.
 
 For a governed list, the typical internal flow is:
 

@@ -216,6 +216,66 @@ Every allow, deny, confirmation decision and execution is audit-recorded in Zone
 The UI overlay returned with a result is opaque Prefab structure: Zone 2 supplies
 domain labels and layout while Zone 1 applies the active host brand palette.
 
+### Execution path
+
+The sequence below is what happens on every tool call, from the moment a bearer
+token arrives at Zone 2 to the moment data is returned. Each step is a hard gate;
+failure at any step produces a governed denial and is audit-recorded.
+
+1. **JWT verification** — FastMCP `JWTVerifier` validates the token signature,
+   expiry, issuer, and `aud=zone2-mcp` before any handler runs. No token means
+   no access, regardless of the operation.
+
+2. **Discovery filter (Axes 1 + 2)** — on every `tools/list` request, Zone 2
+   evaluates role and purpose against each registered capability. Tools the
+   caller cannot invoke are hidden entirely, not returned as disabled rows. A
+   patient token with `purpose=self_service` will not see clinician capabilities
+   at all. *(Design rationale: ADR-0021)*
+
+3. **Identity and scope resolution** — on tool invocation, Zone 2 resolves the
+   full `ExecutionContext`:
+   - OIDC resolver reads `realm_access.roles`, `purpose`, `preferred_username`,
+     and `caller_zone` from the already-verified claims.
+   - The domain's subject-relationship resolver then calls the entitlement
+     source (mock FHIR `GET /CareTeam?participant=<username>` in dev; a real
+     CareTeam/consent service in production) and merges the result into
+     `subject_scope`. The scope is never derived from the model prompt or the
+     token itself. *(NHS-specific mapping: [nhs-care.md — Seed identities](demos/nhs-care.md))*
+
+4. **Three-axis policy evaluation** — the `DeterministicPolicyEvaluator` checks
+   independently:
+   - **Axis 1 — Role**: does the caller hold a required role? (NHS capabilities
+     set no required role; the purpose axis is the gate.)
+   - **Axis 2 — Purpose**: is `request_purpose` in `permitted_purposes`?
+   - **Axis 3 — Subject scope**: is the `subject_id` parameter in
+     `context.subject_scope`? Only fires for capabilities that declare a
+     `subject_id` parameter. Any scope mismatch → `SUBJECT_OUT_OF_SCOPE`.
+   *(Design rationale: ADR-0019)*
+
+5. **Connector execution (defence in depth)** — every NHS connector independently
+   re-checks `subject_id in context.subject_scope` before touching FHIR data,
+   and filters FHIR results to the authorised scope before returning them. A
+   policy bypass would still be stopped here.
+
+6. **Field disclosure and obligations** — output fields are filtered by the
+   capability's compiled disclosure rules before the response crosses the Zone 2
+   boundary. *(Design rationale: ADR-0026)*
+
+### Further reading
+
+To understand the auth and governance model in depth, read the sources below in
+this order. None duplicates another; each covers one layer.
+
+| What | Where |
+|---|---|
+| Why purpose is derived from the token, not a tool parameter | Zone 2: [ADR-0017](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0017-purpose-is-identity-derived-not-a-tool-parameter.md) |
+| Full three-axis governance design (the main auth ADR) | Zone 2: [ADR-0019](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0019-oidc-identity-entitlement-and-three-axis-governance.md) |
+| Why Axes 1+2 are enforced at discovery time | Zone 2: [ADR-0021](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0021-two-axis-tool-visibility-filtering-at-discovery-time.md) |
+| Caller-zone-aware field stripping and disclosure | Zone 2: [ADR-0026](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0026-zone-identity-governance.md) |
+| Realm-as-code, profile catalogue, token verification wiring | Zone 2: [docs/dev/keycloak.md](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/keycloak.md) |
+| NHS seed identities, entitlement matrix, allow/deny acceptance tests | Root: [docs/demos/nhs-care.md](demos/nhs-care.md) |
+| Why Zone 1 is purpose-free and credentials never enter the model | Zone 1: [ADR-0016](../../SovereignAgenticArchitectureZoneOne/docs/adr/0016-purpose-is-identity-derived-zone-1-is-purpose-free.md), [ADR-0018](../../SovereignAgenticArchitectureZoneOne/docs/adr/0018-secure-credential-handle-for-user-tokens.md) |
+
 ### Browser login mechanics
 
 `zone1 chat --login` uses Authorization Code with PKCE S256. It opens the
