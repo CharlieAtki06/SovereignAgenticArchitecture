@@ -22,6 +22,8 @@ assert_contains demo-rebuild-nhs "--rebuild"
 assert_contains demo-rebuild-infrastructure "--rebuild"
 assert_contains desktop-up-nhs "desktop-dev-governed DEPLOYMENT_POLICY=nhs"
 assert_contains desktop-up-nhs "uv sync --all-groups --all-extras"
+assert_contains desktop-rebuild-nhs "demo-rebuild-nhs"
+assert_contains desktop-rebuild-nhs "desktop-dev-governed DEPLOYMENT_POLICY=nhs"
 assert_contains desktop-reset-nhs "demo-reset-nhs"
 assert_contains desktop-reset-nhs "desktop-dev-governed DEPLOYMENT_POLICY=nhs"
 assert_contains desktop-up-infrastructure "DEPLOYMENT_POLICY=northstar-infrastructure"
@@ -54,5 +56,11 @@ assert_zone2_lifecycle demo-rebuild-infrastructure "--rebuild"
 desktop_output=$(make -C "$root_dir" -n desktop-up-nhs)
 if [[ $desktop_output == *"zone1) up -d"* ]]; then
   echo "desktop-up-nhs must not start the containerised Zone 1 edge" >&2
+  exit 1
+fi
+
+desktop_rebuild_output=$(make -C "$root_dir" -n desktop-rebuild-nhs)
+if [[ $desktop_rebuild_output == *"zone1) up -d"* ]]; then
+  echo "desktop-rebuild-nhs must not start the containerised Zone 1 edge" >&2
   exit 1
 fi

@@ -105,9 +105,11 @@ The lifecycle intentionally does not delegate `depends_on` readiness to
 Compose. This avoids an unbounded `podman-compose` condition wait while keeping
 the same entry points for Docker and Podman.
 
-After changing a committed Keycloak realm export, the realm must be imported
-into a fresh profile database. This reset is intentionally destructive, but is
-scoped to the selected profile:
+After changing a committed Keycloak realm export or the pinned NHS Definition
+seed, the profile needs a fresh database. Definition revisions and active
+pointers are deliberately immutable: normal startup will not silently replace
+an active snapshot with a different seed digest. This reset is intentionally
+destructive, but is scoped to the selected synthetic profile:
 
 ```bash
 make desktop-down-nhs
