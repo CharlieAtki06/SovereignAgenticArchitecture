@@ -12,17 +12,18 @@ different consumers and must never be reconstructed from one another.
 
 | Zone 2 output | Consumer | PP-1 rule |
 |---|---|---|
-| Exactly one FastMCP `ToolResult.content` text block | Zone 1 model history | `ModelObservation`: non-empty and at most 1,024 Unicode code points. |
-| `structured_content.zone2_app` plus the opaque app-session reference | The authorised local App renderer | `AppPresentation`: opaque renderer data; it is not model context. |
+| Compact model-audience projection | Zone 1 model history | `ModelObservation`: bounded text only. |
+| Authorised human-audience projection plus opaque lifecycle metadata | The authorised local App renderer | `AppPresentation`: opaque renderer data; it is not model context. |
 | Governed result and projection-private top-level/row fields | Zone 2 projectors and server-held grants only | Never serialized in an App-enabled completion. |
 
 Zone 2 owns policy, response limiting, projector content, App structure and audit.
 Zone 1 is an anti-corruption mapper and generic local host: it does not inspect
 domain fields, create a projection, reproduce policy, or import Zone 2 source.
 
-The App-enabled `structured_content` envelope is closed and contains exactly
-`status`, `request_id` and `zone2_app`. Zone 1 rejects extra siblings, including
-`result` and `provenance`, so a producer regression fails closed.
+The App-enabled result is closed. Zone 1 rejects every undeclared field so a
+producer regression fails closed. Exact keys, cardinality and limits are owned
+solely by the
+[normative boundary contract](/docs/data-boundary-and-projection-contract).
 
 Zone 1 validates the two projections independently. If the App envelope is
 invalid, Zone 1 fails the interaction closed and renders no raw structured
@@ -43,9 +44,9 @@ model prompts. Log only the capability ID, observation failure category and
 length; never the observation text or governed/App payload.
 
 This is the projection firewall defined by
-[ADR 0006](../docs/adr/0006-model-observation-and-app-presentation-are-independent-projections.md)
+[ADR 0006](/docs/adr/model-observation-and-app-presentation-are-independent-projections)
 and strengthened at the transport boundary by
-[ADR 0008](../docs/adr/0008-app-completions-carry-audience-projections-not-governed-results.md).
+[ADR 0008](/docs/adr/app-completions-carry-audience-projections-not-governed-results).
 A completion containing `zone2_app` must never take a generic raw-result
 branch. The old direct backend/App route is removed; non-App semantic
 capabilities have their own explicitly bounded model-disclosure contract.
@@ -75,17 +76,9 @@ revision, and maps it to a normal governed request. The iframe never receives
 or chooses a capability ID, backend cursor, subject identifier, source handle,
 session token or idempotency key.
 
-A successful action returns exactly a typed whole-tree replacement:
-
-```json
-{
-  "kind": "app.update.replace.v1",
-  "presentation_revision": 1,
-  "zone2_app": { "...": "post-obligation Prefab tree" }
-}
-```
-
-Its FastMCP `content` is explicitly empty. Zone 1 keeps any successor session
+A successful action returns the closed typed App outcome defined by the
+[normative boundary contract](/docs/data-boundary-and-projection-contract).
+It has no model-audience content. Zone 1 keeps any successor session
 reference and the complete current handle manifest in the private App-instance
 lifecycle. A rendered Prefab tree necessarily contains the one opaque handle
 for each visible control, but no separate handle manifest or Zone 2 session
@@ -95,7 +88,7 @@ governed JSON or `response_text`.
 
 There is no direct iframe-to-capability route. `apps.execute_action` is the
 only interactive App protocol. See
-[ADR 0007](../docs/adr/0007-host-only-governed-app-actions.md).
+[ADR 0007](/docs/adr/host-only-governed-app-actions).
 
 ---
 
@@ -139,6 +132,7 @@ Any tool that queries a data source capable of returning more items than fit in 
 ```
 
 And the response must include:
+
 ```json
 {
   "items":       [...],
@@ -172,6 +166,7 @@ missing-key vs null-value differently.
 ### 5. Error responses are compact
 
 A connector error response (zone2 `status: "failed"`) should carry only:
+
 - `status` discriminator
 - `error_code` (Zone 2's stable code)
 - `reason_codes` (opaque list, zero or more)

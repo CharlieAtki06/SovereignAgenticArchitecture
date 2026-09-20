@@ -66,7 +66,7 @@ every model tool and value must independently pass its referenced Tool
 Disclosure, trusted transformation and budget. Capability registration, MCP
 visibility and public output fields confer no Zone 3 model visibility. The
 normative internal seam is Zone 2
-[ADR-0031](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0031-explicit-reasoning-disclosures-and-runtime-catalogue-port.md).
+[ADR-0031](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0031-explicit-reasoning-disclosures-and-runtime-catalogue-port.md).
 
 ## Exact initial App completion
 
@@ -227,7 +227,7 @@ Before merging a change to this boundary, prove all of the following:
 - [ADR-0006](adr/0006-model-observation-and-app-presentation-are-independent-projections.md) — independent projections.
 - [ADR-0007](adr/0007-host-only-governed-app-actions.md) — host-only action surface.
 - [ADR-0008](adr/0008-app-completions-carry-audience-projections-not-governed-results.md) — governed results do not cross on App completions.
-- [Connector design contract](../contracts/connector-design.md) — authoring and regression rules.
+- [Connector design contract](/contracts/connector-design) — authoring and regression rules.
 
 Historical phase plans and superseded ADRs explain how the design evolved; they
 must not be used as the current wire contract when they conflict with this page

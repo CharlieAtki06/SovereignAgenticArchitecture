@@ -7,3 +7,17 @@
 .env
 .env.*
 !.env.example
+
+# Documentation portal build products
+portal/node_modules/
+portal/.docusaurus/
+portal/build/
+portal/src/generated/*
+!portal/src/generated/.gitkeep
+portal/static/code-graphs/
+portal/project-docs/
+portal/playwright-report/
+portal/test-results/
+
+# Root graphify query index (the committed zone viewers live in docs/graphs/)
+graphify-out/

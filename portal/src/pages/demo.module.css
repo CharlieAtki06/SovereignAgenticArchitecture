@@ -1,0 +1,399 @@
+.presenter {
+  min-height: 100vh;
+  padding: 1rem clamp(1rem, 2.5vw, 2.5rem) 1.5rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 10%, rgb(34 216 180 / 13%), transparent 26rem),
+    linear-gradient(145deg, #07111f, #101a2b 62%, #0b1422);
+  color: #f5f9fc;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  max-width: 2320px;
+  margin: 0 auto;
+  padding: 0.4rem 0 1rem;
+}
+
+.brand,
+.exit {
+  color: #eaf2f8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.brand span {
+  color: #8fa3b7;
+  font-weight: 600;
+}
+
+.exit {
+  justify-self: end;
+}
+
+.exit kbd {
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.38rem;
+  border: 1px solid rgb(255 255 255 / 17%);
+  border-radius: 0.3rem;
+  background: rgb(255 255 255 / 7%);
+  box-shadow: none;
+  color: #b8c5d2;
+  font: inherit;
+  font-size: 0.64rem;
+}
+
+.progressText {
+  display: flex;
+  gap: 0.45rem;
+  color: #7f93a8;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.72rem;
+}
+
+.progressText span:first-child {
+  color: var(--portal-accent-bright);
+}
+
+.progressTrack {
+  height: 2px;
+  max-width: 2320px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: rgb(255 255 255 / 9%);
+}
+
+.progressTrack span {
+  display: block;
+  height: 100%;
+  background: var(--portal-accent-bright);
+  transition: width 220ms ease;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(19rem, 0.56fr) minmax(0, 1.44fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4.5rem);
+  width: 100%;
+  max-width: 1760px;
+  min-height: calc(100vh - 10rem);
+  margin: 0 auto;
+  padding: 1.5rem 0 4.75rem;
+}
+
+.stage[data-presenter-kind='architecture'] {
+  display: flex;
+  max-width: 2320px;
+  min-height: calc(100vh - 7rem);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(1rem, 2vh, 1.5rem);
+  padding-top: 1rem;
+}
+
+.stage[data-presenter-kind='statement'] {
+  grid-template-columns: minmax(20rem, 0.7fr) minmax(0, 1.3fr);
+}
+
+.copy {
+  max-width: 36rem;
+}
+
+.stage[data-presenter-kind='architecture'] .copy {
+  display: grid;
+  max-width: none;
+  grid-template-columns: minmax(18rem, 0.72fr) minmax(26rem, 1.28fr);
+  align-items: end;
+  gap: clamp(1.5rem, 4vw, 5rem);
+}
+
+.stage[data-presenter-kind='architecture'] .story {
+  max-width: 62rem;
+}
+
+.visual {
+  min-width: 0;
+}
+
+.stage[data-presenter-kind='architecture'] .visual {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.stage[data-presenter-kind='architecture']
+  .visual
+  :global([data-architecture-view][data-mode='presenter']) {
+  width: 100%;
+  height: clamp(26rem, 58vh, 46rem);
+  min-height: 26rem;
+}
+
+.stage[data-presenter-kind='architecture']
+  .visual
+  :global([data-architecture-view][data-mode='presenter'] > [data-view-kind]) {
+  height: 100%;
+  min-height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: var(--portal-accent-bright);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.copy h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(2.3rem, 4.2vw, 4.65rem);
+  letter-spacing: -0.055em;
+  line-height: 0.97;
+  overflow-wrap: normal;
+  text-wrap: balance;
+  word-break: normal;
+}
+
+.stage[data-presenter-kind='architecture'] .copy h1 {
+  font-size: clamp(2rem, 3vw, 3.45rem);
+}
+
+.presenter[data-presenter-scene='governed-access-question'] .copy h1 {
+  font-size: clamp(2.15rem, 3.8vw, 4.2rem);
+}
+
+.narrative {
+  margin: 1.5rem 0 0;
+  color: #aebfd0;
+  font-size: clamp(1rem, 1.45vw, 1.25rem);
+  line-height: 1.6;
+}
+
+.stage[data-presenter-kind='architecture'] .narrative {
+  margin-top: 0;
+  font-size: clamp(0.95rem, 1.15vw, 1.12rem);
+  line-height: 1.5;
+}
+
+.presenterCue {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 1.35rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgb(56 220 193 / 18%);
+  border-radius: 0.75rem;
+  background: rgb(56 220 193 / 6%);
+  color: #b8c8d6;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.presenterCue strong {
+  color: var(--portal-accent-bright);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.guideLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  color: var(--portal-accent-bright);
+  font-size: 0.82rem;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.guideLink:hover {
+  color: #8bf0df;
+  text-decoration: underline;
+}
+
+.controls {
+  position: fixed;
+  right: clamp(1rem, 2.5vw, 2.5rem);
+  bottom: 1rem;
+  left: clamp(1rem, 2.5vw, 2.5rem);
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  max-width: 2320px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.controls button {
+  width: max-content;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.65rem;
+  background: rgb(8 17 30 / 82%);
+  color: #dce7f0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  pointer-events: auto;
+}
+
+.controls button:last-child {
+  justify-self: end;
+}
+
+.controls button:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+.dots {
+  display: flex;
+  justify-self: center;
+  gap: 0.35rem;
+  pointer-events: auto;
+}
+
+.controls button:focus-visible,
+.guideLink:focus-visible,
+.exit:focus-visible,
+.brand:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--portal-accent-bright) 72%, white);
+  outline-offset: 3px;
+}
+
+.dots button,
+.dots button:last-child {
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  justify-self: auto;
+}
+
+.dots button::after {
+  display: block;
+  width: 0.34rem;
+  height: 0.34rem;
+  margin: auto;
+  border-radius: 999px;
+  background: #5c6f83;
+  content: '';
+}
+
+.dots button.currentDot::after {
+  width: 1rem;
+  background: var(--portal-accent-bright);
+}
+
+@media (max-width: 920px) {
+  .presenter {
+    overflow: auto;
+  }
+
+  .stage {
+    grid-template-columns: 1fr;
+    align-items: start;
+    min-height: auto;
+    padding: 2rem 0 8rem;
+  }
+
+  .stage[data-presenter-kind='statement'],
+  .stage[data-presenter-kind='architecture'] {
+    grid-template-columns: 1fr;
+  }
+
+  .stage[data-presenter-kind='architecture'] {
+    display: flex;
+    min-height: auto;
+    justify-content: flex-start;
+    gap: 1.25rem;
+  }
+
+  .stage[data-presenter-kind='architecture'] .copy {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 0.8rem;
+  }
+
+  .stage[data-presenter-kind='architecture'] .story {
+    max-width: 46rem;
+  }
+
+  .stage[data-presenter-kind='architecture']
+    .visual
+    :global([data-architecture-view][data-mode='presenter']) {
+    height: min(50vh, 30rem);
+    min-height: 18rem;
+  }
+
+  .copy {
+    max-width: 46rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .progressText {
+    display: none;
+  }
+
+  .controls {
+    grid-template-areas: 'previous next';
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .controls > button:first-child {
+    grid-area: previous;
+  }
+
+  .controls > button:last-child {
+    grid-area: next;
+  }
+
+  .dots {
+    display: none;
+  }
+
+  .controls button {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 921px) {
+  .stage[data-presenter-kind='architecture'] {
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+  }
+
+  .stage[data-presenter-kind='architecture']
+    .visual
+    :global([data-architecture-view][data-mode='presenter']) {
+    height: clamp(23rem, 54vh, 30rem);
+    min-height: 23rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .presenter *,
+  .presenter *::before,
+  .presenter *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

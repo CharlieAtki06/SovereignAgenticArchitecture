@@ -1,0 +1,176 @@
+name: Documentation portal
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: documentation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  portal-quality:
+    name: Public portal checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the root repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install pinned portal dependencies
+        working-directory: portal
+        run: bun install --frozen-lockfile
+
+      - name: Install the Playwright browser
+        working-directory: portal
+        run: bunx playwright install --with-deps chromium
+
+      - name: Validate and test the portal
+        working-directory: portal
+        env:
+          CI: "true"
+        run: bun run check
+
+      - name: Upload browser diagnostics after a failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-browser-diagnostics
+          path: |
+            portal/playwright-report
+            portal/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Package the GitHub Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: portal/build
+
+  evidence-gate:
+    name: Architecture evidence gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Classify the event context
+        id: context
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          CURRENT_REPOSITORY: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          trusted=false
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            trusted=true
+          elif [[ "$EVENT_NAME" == "pull_request" && "$HEAD_REPOSITORY" == "$CURRENT_REPOSITORY" && "$ACTOR" != "dependabot[bot]" ]]; then
+            trusted=true
+          fi
+          echo "trusted=$trusted" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the root repository
+        uses: actions/checkout@v4
+        with:
+          path: SovereignAgenticArchitecture
+          persist-credentials: false
+
+      - name: Report intentionally unavailable private evidence
+        if: steps.context.outputs.trusted != 'true'
+        run: |
+          {
+            echo "## Private evidence validation"
+            echo
+            echo "Skipped for this untrusted pull-request context. Public architecture, content, build and browser checks still run without private repository credentials."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require the private repository token
+        if: steps.context.outputs.trusted == 'true'
+        env:
+          ZONE_EVIDENCE_READ_TOKEN: ${{ secrets.ZONE_EVIDENCE_READ_TOKEN }}
+        run: |
+          if [[ -z "$ZONE_EVIDENCE_READ_TOKEN" ]]; then
+            echo "ZONE_EVIDENCE_READ_TOKEN is required for trusted evidence validation." >&2
+            exit 1
+          fi
+
+      - name: Read pinned evidence revisions
+        if: steps.context.outputs.trusted == 'true'
+        id: evidence-lock
+        working-directory: SovereignAgenticArchitecture
+        run: |
+          node -e "const {repositories:r}=require('./architecture/evidence.lock.json'); if (!r.zone1.commit || !r.zone2.commit) throw new Error('zone evidence revisions must be pinned'); console.log('zone1='+r.zone1.commit); console.log('zone2='+r.zone2.commit)" >> "$GITHUB_OUTPUT"
+
+      - name: Check out pinned Zone 1 evidence
+        if: steps.context.outputs.trusted == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: CharlieAtki06/SovereignAgenticArchitectureZoneOne
+          ref: ${{ steps.evidence-lock.outputs.zone1 }}
+          token: ${{ secrets.ZONE_EVIDENCE_READ_TOKEN }}
+          path: SovereignAgenticArchitectureZoneOne
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check out pinned Zone 2 evidence
+        if: steps.context.outputs.trusted == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: CharlieAtki06/SovereignAgenticArchitectureZoneTwo
+          ref: ${{ steps.evidence-lock.outputs.zone2 }}
+          token: ${{ secrets.ZONE_EVIDENCE_READ_TOKEN }}
+          path: Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node.js
+        if: steps.context.outputs.trusted == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate evidence against pinned repositories
+        if: steps.context.outputs.trusted == 'true'
+        working-directory: SovereignAgenticArchitecture
+        run: >-
+          node scripts/verify-evidence.mjs
+          --root .
+          --zone1 ../SovereignAgenticArchitectureZoneOne
+          --zone2 ../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo
+
+  deploy-pages:
+    name: Deploy GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - portal-quality
+      - evidence-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the validated portal
+        id: deployment
+        uses: actions/deploy-pages@v4

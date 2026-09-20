@@ -1,0 +1,145 @@
+model {
+  enterprise = zone 'Enterprise Intelligence & Resources — Zone 3' 'Reasoning and enterprise-owned resources reachable only through Gateway connectors.' {
+    #zone_enterprise
+    metadata {
+      owner 'external'
+      maturity 'external'
+      verification 'source'
+      evidence 'root:docs/system-map.md'
+      constraint_1 'Cannot be reached directly from Edge; every request crosses the Governance Gateway connector boundary.'
+    }
+
+    reasoning = area 'Reasoning Plane' 'Large reasoning models reached through the Zone 2 connector boundary.' {
+      #zone_enterprise
+      metadata {
+        owner 'external'
+        maturity 'external'
+        verification 'live'
+        evidence 'root:docs/flows/reasoning-escalation.md'
+        constraint_1 'Cannot make Gateway admission decisions or access undisclosed tools.'
+      }
+
+      llm = resource 'Enterprise Reasoning LLM' 'Produces bounded structured reasoning and may request only disclosed tools.' {
+        #zone_enterprise
+        metadata {
+          owner 'external'
+          maturity 'external'
+          verification 'live'
+          evidence 'root:docs/flows/reasoning-escalation.md'
+          limitation 'Single-shot Ollama use is live-proven; autonomous disclosed tool use is not yet live-proven.'
+          constraint_1 'Cannot contact Edge directly or request a tool outside the current compiled disclosures.'
+        }
+      }
+    }
+
+    records = area 'Systems of Record' 'Enterprise sources remain behind the Zone 2 connector boundary.' {
+      #zone_enterprise
+      metadata {
+        owner 'external'
+        maturity 'external'
+        verification 'source'
+        evidence 'root:docs/system-map.md'
+        constraint_1 'Cannot be queried directly by an Edge Experience or Edge Runtime.'
+      }
+
+      fhir = resource 'FHIR Services' 'Clinical data exposed through configured connectors.' {
+        #zone_enterprise
+        metadata {
+          owner 'external'
+          maturity 'external'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot return clinical records directly to Edge.'
+        }
+      }
+
+      sql = resource 'SQL Databases' 'Structured enterprise data exposed through configured connectors.' {
+        #zone_enterprise
+        metadata {
+          owner 'external'
+          maturity 'external'
+          verification 'source'
+          evidence 'zone2:src'
+          constraint_1 'Cannot be queried directly from Edge.'
+        }
+      }
+
+      documents = resource 'Enterprise Documents' 'Document sources exposed through configured connectors.' {
+        #zone_enterprise
+        metadata {
+          owner 'external'
+          maturity 'external'
+          verification 'design'
+          evidence 'root:docs/system-map.md'
+          constraint_1 'Cannot be retrieved directly by Edge.'
+        }
+      }
+
+      third_party = resource 'Third-party APIs' 'External services exposed through configured connectors.' {
+        #zone_enterprise
+        metadata {
+          owner 'external'
+          maturity 'external'
+          verification 'source'
+          evidence 'zone2:src'
+          constraint_1 'Cannot be invoked directly by Edge.'
+        }
+      }
+    }
+  }
+
+  gateway.execution.reasoning_connector -> enterprise.reasoning.llm 'Submits an admitted, bounded reasoning request' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'live'
+      evidence 'root:docs/flows/reasoning-escalation.md'
+    }
+  }
+
+  enterprise.reasoning.llm -> gateway.execution.reasoning_connector 'Requests only an Invocation/Tool Disclosure entry' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/flows/reasoning-escalation.md'
+      limitation 'Real-model autonomous disclosed tool selection remains to be live-proven.'
+    }
+  }
+
+  gateway.execution.connector_boundary -> enterprise.records.fhir 'Uses an authorised FHIR connector' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.execution.connector_boundary -> enterprise.records.sql 'Uses an authorised SQL connector' {
+    metadata {
+      owner 'zone2'
+      maturity 'scaffold'
+      verification 'source'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.execution.connector_boundary -> enterprise.records.documents 'Uses an authorised document connector' {
+    metadata {
+      owner 'zone2'
+      maturity 'planned'
+      verification 'design'
+      evidence 'root:docs/system-map.md'
+    }
+  }
+
+  gateway.execution.connector_boundary -> enterprise.records.third_party 'Uses an authorised API connector' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'source'
+      evidence 'zone2:src'
+    }
+  }
+}

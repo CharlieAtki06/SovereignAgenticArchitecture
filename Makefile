@@ -27,16 +27,33 @@ ZONE1_DIR := ../SovereignAgenticArchitectureZoneOne
 ZONE2_DIR := ../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo
 ZONE1 := $(COMPOSE) -f $(ZONE1_DIR)/docker-compose.yml
 ZONE2 := $(COMPOSE) -f $(ZONE2_DIR)/docker-compose.yml
+PORTAL_DIR := portal
 
 .PHONY: help up down ps logs edge-logs zone1-up zone1-down zone1-rebuild zone2-up zone2-down \
         demo-up-nhs demo-down-nhs demo-rebuild-nhs demo-logs-nhs demo-worker-logs-nhs demo-reset-nhs \
         demo-up-infrastructure demo-down-infrastructure demo-rebuild-infrastructure demo-logs-infrastructure demo-worker-logs-infrastructure demo-reset-infrastructure \
         desktop-up-nhs desktop-down-nhs desktop-rebuild-nhs desktop-reset-nhs desktop-up-infrastructure desktop-down-infrastructure \
-        test-demo-orchestration
+        test-demo-orchestration docs-install docs-dev docs-build docs-check docs-evidence
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+docs-install: ## Install the pinned portal toolchain and Chromium smoke-test browser
+	bun install --cwd $(PORTAL_DIR)
+	cd $(PORTAL_DIR) && bunx playwright install chromium
+
+docs-dev: ## Run the architecture portal locally with generated LikeC4 views
+	bun run --cwd $(PORTAL_DIR) start
+
+docs-build: ## Produce the static, offline-capable documentation portal
+	bun run --cwd $(PORTAL_DIR) build
+
+docs-check: ## Validate architecture, content, site, accessibility and browser flows
+	bun run --cwd $(PORTAL_DIR) check
+
+docs-evidence: ## Resolve architecture evidence against both pinned zone checkouts
+	bun run --cwd $(PORTAL_DIR) verify:evidence
 
 up: ## Bring up the full system (Zone 2 stack, then the Zone 1 edge on its network)
 	$(ZONE2) up -d

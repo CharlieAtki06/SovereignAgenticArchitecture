@@ -25,33 +25,15 @@ Zone 2 owns three distinct data classes after policy obligations:
 | Type | Purpose | May cross into Zone 1? |
 |---|---|---|
 | Governed Outcome | Audited application result used inside Zone 2 | Only for the temporary non-App semantic path |
-| Model Observation | Compact text deliberately projected for the local model | Yes, only in one MCP `content` text block |
-| App Presentation | Post-obligation Prefab tree deliberately projected for the authorised human | Yes, only in `structured_content.zone2_app` |
+| Model Observation | Compact text deliberately projected for the local model | Yes, only through its declared audience channel |
+| App Presentation | Post-obligation Prefab tree deliberately projected for the authorised human | Yes, only through its declared audience channel |
 | Projection-Private Data | Top-level or per-row routing state used to build presentations and grants | No |
 
-An initial successful App-enabled capability call has this exact MCP shape:
-
-```json
-{
-  "content": [
-    { "type": "text", "text": "<ModelObservation, 1..1024 code points>" }
-  ],
-  "structured_content": {
-    "status": "completed",
-    "request_id": "<governed request correlation>",
-    "zone2_app": { "<post-obligation Prefab tree>": "..." }
-  },
-  "_meta": {
-    "zone2/app_session_id": "<opaque session reference>",
-    "zone2/app_action_handles": ["<opaque handles visible in this tree>"],
-    "zone2/presentation_revision": 0
-  }
-}
-```
-
-`structured_content` is a closed envelope. `result`, `provenance`, cursors,
-source references, subject references and action targets are forbidden siblings.
-Zone 1 rejects an App completion with any additional key instead of ignoring it.
+An initial successful App-enabled capability call uses a closed,
+projection-only MCP result. The exact channels, keys, bounds, and forbidden
+siblings are defined solely by the
+[normative boundary contract](../data-boundary-and-projection-contract.md).
+Zone 1 rejects any addition to that closed shape instead of ignoring it.
 
 Projection-private values have separate typed declarations for top-level values
 and list-row values. They are validated as part of the maximum Zone 2 result
@@ -59,21 +41,10 @@ contract, but are excluded from MCP discovery, model descriptions, the App tree,
 the initial App completion envelope, action input, logs and audit display data.
 They may be copied only into a server-held, digest-backed App-action grant.
 
-The non-App semantic compatibility path retains the governed completion
-envelope temporarily:
-
-```json
-{
-  "status": "completed",
-  "request_id": "...",
-  "result": { "...": "bounded governed model input" },
-  "provenance": { "...": "..." }
-}
-```
-
-It must never be selected when `zone2_app` is present. App-action calls continue
-to use the separate `/mcp/app-actions` surface and return empty `content` plus a
-closed replace/reject/fail envelope as defined by ADR-0007.
+The non-App semantic compatibility path retains a distinct bounded completion
+contract temporarily. It must never be selected for an App-enabled result.
+App-action calls continue to use the separate host-only surface and its closed
+outcome contract as defined by ADR-0007 and the normative boundary contract.
 
 ```mermaid
 flowchart LR
@@ -87,7 +58,7 @@ flowchart LR
     end
 
     M -->|ToolResult.content| L[Zone 1 local model]
-    A -->|structured_content.zone2_app| H[Zone 1 generic App host]
+    A -->|authorised App channel| H[Zone 1 generic App host]
     S -. private bindings are never serialized .-> N[Zone 2 boundary invariant]
     G -. governed result is forbidden on App completion .-> N
 ```

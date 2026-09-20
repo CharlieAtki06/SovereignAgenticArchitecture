@@ -1,3 +1,13 @@
+---
+title: Projection-boundary documentation audit
+sidebar_label: Projection audit (historical)
+---
+
+:::caution Historical record
+This audit captures a point-in-time documentation review. The normative wire
+contract and accepted ADRs take precedence over its findings.
+:::
+
 # Projection-boundary documentation audit
 
 **Audit date:** 2026-09-07  

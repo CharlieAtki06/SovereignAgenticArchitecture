@@ -1,0 +1,322 @@
+views {
+  global style zone_identity
+
+  view flow_permitted_path {
+    title 'The one permitted path to enterprise resources'
+    description 'The Edge experience, local orchestration and small model remain inside Zone 1. Enterprise work crosses only the published Gateway MCP interface, where the active snapshot, authentication, deterministic policy and audit constrain connector execution. Only Gateway connectors reach the Zone 3 reasoning model and Systems of Record; no direct Edge-to-enterprise path exists.'
+    include edge
+    include edge.experiences.desktop
+    include edge.runtime.ui_adapter
+    include edge.runtime.orchestration
+    include edge.runtime.local_model
+    include edge.runtime.mcp_client
+    include gateway
+    include gateway.ingress.mcp_server
+    include gateway.ingress.authentication
+    include gateway.governance
+    include gateway.definitions.active_snapshot
+    include gateway.definitions.catalogue
+    include gateway.execution.orchestrator
+    include gateway.execution.connector_boundary
+    include gateway.execution.reasoning_connector
+    include enterprise
+    include enterprise.reasoning
+    include enterprise.reasoning.llm
+    include enterprise.records
+    include enterprise.records.fhir
+    include enterprise.records.sql
+    include enterprise.records.documents
+    exclude gateway -> edge
+    exclude enterprise -> gateway
+    rank same {
+      edge.runtime.ui_adapter, edge.runtime.orchestration
+    }
+    rank same {
+      edge.runtime.local_model, edge.runtime.mcp_client
+    }
+    rank same {
+      gateway.definitions.active_snapshot, gateway.definitions.catalogue
+    }
+    rank same {
+      gateway.ingress.mcp_server, gateway.ingress.authentication
+    }
+    rank same {
+      gateway.execution.orchestrator, gateway.execution.connector_boundary, gateway.execution.reasoning_connector
+    }
+    rank same {
+      enterprise.records.fhir, enterprise.records.sql, enterprise.records.documents
+    }
+    autoLayout LeftRight 60 40
+  }
+
+  dynamic view flow_permitted_path_walkthrough {
+    variant diagram
+    title 'The one permitted path to enterprise capability'
+    description 'Walk through the boundary rule from the user experience to governed enterprise capability. Intent and capability selection stay in Edge; every outward request crosses the published MCP interface; deterministic Gateway admission precedes connector execution; only Gateway connectors can reach enterprise records or bounded reasoning.'
+    include edge
+    include edge.experiences.desktop
+    include edge.runtime.ui_adapter
+    include edge.runtime.orchestration
+    include edge.runtime.local_model
+    include edge.runtime.mcp_client
+    include gateway
+    include gateway.ingress.mcp_server
+    include gateway.ingress.authentication
+    include gateway.governance
+    include gateway.governance.policy
+    include gateway.definitions.active_snapshot
+    include gateway.definitions.catalogue
+    include gateway.execution.orchestrator
+    include gateway.execution.connector_boundary
+    include gateway.execution.reasoning_connector
+    include enterprise
+    include enterprise.reasoning
+    include enterprise.reasoning.llm
+    include enterprise.records
+    include enterprise.records.fhir
+    include enterprise.records.sql
+    include enterprise.records.documents
+    gateway.definitions.active_snapshot -> gateway.definitions.catalogue '1. Before any request, the active snapshot limits what can be published'
+    gateway.definitions.catalogue -> gateway.ingress.mcp_server '2. Expose only that configured catalogue over MCP'
+    edge.experiences.desktop -> edge.runtime.ui_adapter '3. Begin in the Edge Experience'
+    edge.runtime.ui_adapter -> edge.runtime.orchestration '4. Keep interaction and orchestration inside Edge'
+    edge.runtime.orchestration -> edge.runtime.local_model '5. Use the local model to understand intent'
+    edge.runtime.orchestration -> edge.runtime.mcp_client '6. Leave Edge only through the governed MCP client'
+    edge.runtime.mcp_client -> gateway.ingress.mcp_server '7. Cross the single published MCP boundary'
+    gateway.ingress.mcp_server -> gateway.ingress.authentication '8. Authenticate the caller'
+    gateway.ingress.authentication -> gateway.governance.policy '9. Apply deterministic policy'
+    gateway.governance.policy -> gateway.execution.orchestrator '10. Admit one bounded invocation'
+    gateway.execution.orchestrator -> gateway.execution.connector_boundary '11. Execute only through an installed enterprise connector'
+    gateway.execution.connector_boundary -> enterprise.records.fhir '12. Reach only the configured enterprise source'
+    gateway.execution.orchestrator -> gateway.execution.reasoning_connector '13. When configured, invoke bounded enterprise reasoning'
+    gateway.execution.reasoning_connector -> enterprise.reasoning.llm '14. Reach the large model only through the Gateway connector'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_governed_request_overview {
+    variant sequence
+    title 'One request through the controlled door'
+    description 'This walkthrough follows the allowed path. At the decision beat, the Gateway may instead pause for explicit confirmation or deny the request; every outcome is audited, and only authorised projections return to Edge.'
+    edge.experiences.desktop -> edge.runtime '1. Ask and understand locally'
+    edge.runtime -> gateway.ingress '2. Cross the published MCP boundary'
+    gateway.ingress -> gateway.governance '3. Authenticate and decide'
+    gateway.governance -> gateway.execution '4. Execute admitted work through connectors'
+    gateway.execution -> gateway.projection '5. Shape each audience'
+    gateway.projection -> edge.runtime '6. Return authorised views'
+    autoLayout LeftRight
+  }
+
+  view flow_integration_definition_overview {
+    title 'A new use case becomes governed runtime configuration'
+    description 'A reviewed JSON Integration Definition declares which installed capabilities, policies, projections, App presentations, connector bindings, and optional reasoning disclosures belong to one deployment. The Gateway validates and compiles an immutable snapshot; executable adapters remain installed code, and each process activates exactly one integration.'
+    include
+      gateway.definitions.source -> gateway.definitions.compiler with {
+        title '1. Review, validate, compile'
+      }
+    include
+      gateway.definitions.compiler -> gateway.definitions.active_snapshot with {
+        title '2. Publish a snapshot for explicit activation'
+      }
+    include
+      gateway.definitions.active_snapshot -> gateway.definitions.catalogue with {
+        title '3. Publish declared capabilities'
+      }
+    include
+      gateway.definitions.catalogue -> gateway.ingress.mcp_server with {
+        title '4. Expose them over MCP'
+      }
+    rank same {
+      gateway.definitions.source, gateway.definitions.compiler
+    }
+    rank same {
+      gateway.definitions.active_snapshot, gateway.definitions.catalogue
+    }
+    autoLayout TopBottom 100 80
+  }
+
+  dynamic view flow_integration_definition_walkthrough {
+    title 'Turn a reviewed use case into governed capabilities'
+    description 'Walk through how reviewed JSON becomes one immutable runtime snapshot and a deliberately limited MCP capability catalogue. The definition selects and configures installed behaviour; it does not contain executable adapters, and activation remains an explicit deployment choice.'
+    gateway.definitions.source -> gateway.definitions.compiler '1. Submit a reviewed Integration Definition'
+    gateway.definitions.compiler -> gateway.definitions.active_snapshot '2. Validate and compile an immutable snapshot'
+    gateway.definitions.active_snapshot -> gateway.definitions.catalogue '3. Publish only the configured capabilities'
+    gateway.definitions.catalogue -> gateway.ingress.mcp_server '4. Expose that catalogue through the published MCP interface'
+    autoLayout LeftRight
+  }
+
+  view governance_outcomes {
+    title 'Governance changes the outcome'
+    description 'Deterministic policy either admits, pauses for confirmation, or denies an invocation, and every decision is auditable.'
+    include gateway.governance.policy
+    include gateway.governance.confirmation
+    include gateway.governance.denied_outcome
+    include gateway.governance.audit
+    include gateway.execution.orchestrator
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_projection_overview {
+    title 'One result, two authorised audiences'
+    description 'The local model receives a compact Model Observation. The person receives a separate authorised App Presentation that is response-scoped and stays out of model history and Edge Checkpoints.'
+    gateway.execution.orchestrator -> gateway.projection.projector '1. Keep the private Governed Outcome inside the Gateway'
+    gateway.projection.projector -> gateway.projection.model_observation '2. Create a compact result for the local model'
+    gateway.projection.projector -> gateway.projection.app_presentation '3. Create a separate authorised presentation for the person'
+    gateway.projection.projector -> edge.runtime.mcp_client '4. Return both authorised projections and opaque lifecycle metadata'
+    edge.runtime.ui_adapter -> edge.runtime.app_host '5. Render the authorised App Presentation'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_governed_request {
+    title 'A governed capability request'
+    edge.experiences.desktop -> edge.runtime.ui_adapter '1. Start an interaction'
+    edge.runtime.ui_adapter -> edge.runtime.orchestration '2. Enter the local orchestration graph'
+    edge.runtime.orchestration -> edge.runtime.local_model '3. Select a model-visible capability'
+    edge.runtime.local_model -> edge.runtime.capability_catalogue '4. Read the discovered catalogue'
+    edge.runtime.orchestration -> edge.runtime.mcp_client '5. Invoke the selected capability'
+    edge.runtime.mcp_client -> gateway.ingress.mcp_server '6. Cross the published MCP boundary'
+    gateway.ingress.mcp_server -> gateway.ingress.authentication '7. Authenticate the caller'
+    gateway.ingress.authentication -> gateway.governance.policy '8. Evaluate policy deterministically'
+    gateway.governance.policy -> gateway.execution.orchestrator '9. Admit a bounded invocation'
+    gateway.execution.orchestrator -> gateway.execution.connector_boundary '10. Execute the configured connector'
+    gateway.execution.orchestrator -> gateway.projection.projector '11. Project the private outcome'
+    gateway.projection.projector -> edge.runtime.mcp_client '12. Return only authorised audience projections and lifecycle metadata'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_confirmation {
+    title 'Explicit confirmation and governed resume'
+    edge.runtime.mcp_client -> gateway.ingress.mcp_server '1. Invoke a capability'
+    gateway.ingress.mcp_server -> gateway.ingress.authentication '2. Authenticate'
+    gateway.ingress.authentication -> gateway.governance.policy '3. Evaluate policy'
+    gateway.governance.policy -> gateway.governance.confirmation '4. Create a confirmation challenge'
+    gateway.governance.confirmation -> gateway.governance.audit '5. Record the lifecycle transition'
+    gateway.governance.confirmation -> gateway.execution.orchestrator '6. Resume only after valid confirmation'
+    gateway.execution.orchestrator -> gateway.projection.projector '7. Project the resulting outcome'
+    gateway.projection.projector -> edge.runtime.mcp_client '8. Return the authorised projection'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_app_completion {
+    title 'Two-audience App completion'
+    edge.runtime.mcp_client -> gateway.ingress.mcp_server '1. Invoke an App-enabled capability'
+    gateway.governance.policy -> gateway.execution.orchestrator '2. Admit the bounded invocation'
+    gateway.execution.orchestrator -> gateway.projection.projector '3. Hand the private outcome to the projector'
+    gateway.projection.projector -> gateway.projection.model_observation '4. Create the compact model audience'
+    gateway.projection.projector -> gateway.projection.app_presentation '5. Create the authorised human audience'
+    gateway.projection.projector -> edge.runtime.mcp_client '6. Return projections plus opaque lifecycle metadata only'
+    edge.runtime.ui_adapter -> edge.runtime.app_host '7. Render the authorised App Presentation'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_app_action {
+    title 'Host-only App action continuation'
+    edge.runtime.ui_adapter -> edge.runtime.app_host '1. A person acts in the sandboxed App surface'
+    edge.runtime.app_host -> edge.runtime.mcp_client '2. The host constructs the opaque continuation; it is not a model tool'
+    edge.runtime.mcp_client -> gateway.ingress.mcp_server '3. Continue through the published MCP boundary'
+    gateway.ingress.mcp_server -> gateway.ingress.authentication '4. Re-authenticate the caller'
+    gateway.ingress.authentication -> gateway.governance.policy '5. Evaluate the continuation deterministically'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_reasoning_disclosure {
+    title 'Bounded Zone 3 reasoning with disclosed tools'
+    gateway.governance.policy -> gateway.execution.orchestrator '1. Admit the outer capability invocation'
+    gateway.execution.orchestrator -> gateway.execution.reasoning_connector '2. Start bounded reasoning with compiled disclosures'
+    gateway.execution.reasoning_connector -> enterprise.reasoning.llm '3. Send the bounded prompt and disclosure catalogue'
+    enterprise.reasoning.llm -> gateway.execution.reasoning_connector '4. Request an allowed opaque tool identifier'
+    gateway.execution.reasoning_connector -> gateway.execution.connector_boundary '5. Call the disclosed connector directly under the outer admission; no fresh policy decision'
+    gateway.execution.connector_boundary -> enterprise.records.fhir '6. Access the bound enterprise source'
+    gateway.execution.orchestrator -> gateway.projection.projector '7. Project the completed private outcome'
+    autoLayout LeftRight
+  }
+
+  view flow_reasoning_overview {
+    title 'Borrow deeper reasoning without granting direct access'
+    description 'Edge invokes a governed reasoning capability over MCP. The Gateway admits one bounded outer invocation, retains private context, discloses only compiled inputs and tool schemas, and enforces transformations and budgets around the Reasoning Plane. Tool subcalls receive no fresh policy decision. Single-shot reasoning is live-proven; autonomous disclosed-tool use is automated-tested but not live-proven and is not enabled by the pinned NHS demo.'
+    include
+      edge.runtime.mcp_client -> gateway.ingress.mcp_server with {
+        title '1. Request governed reasoning'
+      }
+    include
+      gateway.ingress.mcp_server -> gateway.ingress.authentication with {
+        title '2. Authenticate'
+      }
+    include
+      gateway.ingress.authentication -> gateway.governance.policy with {
+        title '3. Allow, confirm, or deny'
+      }
+    include
+      gateway.governance.policy -> gateway.execution.orchestrator with {
+        title '4. Admit one bounded invocation'
+      }
+    include
+      gateway.execution.orchestrator -> gateway.execution.reasoning_connector with {
+        title '5. Apply disclosures and budgets'
+      }
+    include
+      gateway.execution.reasoning_connector -> enterprise.reasoning.llm with {
+        title '6. Send disclosed input and permitted tool schemas'
+      }
+    include
+      enterprise.reasoning.llm -> gateway.execution.reasoning_connector with {
+        title '7. Request an allowed tool'
+      }
+    include
+      gateway.execution.reasoning_connector -> gateway.execution.connector_boundary with {
+        title '8. Call only a disclosed connector with server-held context'
+      }
+    include
+      gateway.execution.connector_boundary -> enterprise.records with {
+        title '9. Access only a bound enterprise source'
+      }
+    include
+      gateway.execution.orchestrator -> gateway.projection.projector with {
+        title '10. Project the completed private outcome'
+      }
+    rank same {
+      gateway.ingress.mcp_server, gateway.ingress.authentication
+    }
+    rank same {
+      gateway.execution.orchestrator, gateway.execution.reasoning_connector, gateway.execution.connector_boundary
+    }
+    autoLayout TopBottom 110 80
+  }
+
+  dynamic view flow_reasoning_walkthrough {
+    title 'Borrow deeper reasoning through a bounded invocation'
+    description 'Walk through the governed reasoning path. The Gateway admits one outer invocation, keeps private context server-side, gives the Reasoning Plane only compiled inputs and permitted tool schemas, and mediates any disclosed tool request. Single-shot reasoning is live-proven; autonomous disclosed-tool use is automated-tested but not yet live-proven or enabled by the pinned NHS demo.'
+    edge.runtime.mcp_client -> gateway.ingress.mcp_server '1. Request a governed reasoning capability over MCP'
+    gateway.ingress.mcp_server -> gateway.ingress.authentication '2. Authenticate the caller'
+    gateway.ingress.authentication -> gateway.governance.policy '3. Apply deterministic policy'
+    gateway.governance.policy -> gateway.execution.orchestrator '4. Admit one bounded outer invocation'
+    gateway.execution.orchestrator -> gateway.execution.reasoning_connector '5. Apply compiled disclosures, transformations, and budgets'
+    gateway.execution.reasoning_connector -> enterprise.reasoning.llm '6. Send only disclosed input and permitted tool schemas'
+    enterprise.reasoning.llm -> gateway.execution.reasoning_connector '7. Optionally request an allowed disclosed tool'
+    gateway.execution.reasoning_connector -> gateway.execution.connector_boundary '8. Mediate that tool under the existing admission; no fresh policy decision'
+    gateway.execution.connector_boundary -> enterprise.records.fhir '9. Reach only the bound enterprise source'
+    gateway.execution.orchestrator -> gateway.projection.projector '10. Project the completed private outcome for its audiences'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_multi_source_capability {
+    title 'One capability composed from multiple enterprise sources'
+    gateway.governance.policy -> gateway.execution.orchestrator '1. Admit one bounded capability'
+    gateway.execution.orchestrator -> gateway.execution.connector_boundary '2. Execute its configured connector plan'
+    gateway.execution.connector_boundary -> enterprise.records.fhir '3. Read authorised clinical data'
+    gateway.execution.connector_boundary -> enterprise.records.sql '4. Read authorised structured data'
+    gateway.execution.connector_boundary -> enterprise.records.third_party '5. Call an authorised external service'
+    gateway.execution.orchestrator -> gateway.projection.projector '6. Project one governed outcome for its audiences'
+    autoLayout LeftRight
+  }
+
+  dynamic view flow_snapshot_activation {
+    title 'Integration Definition snapshot lifecycle'
+    gateway.definitions.source -> gateway.definitions.compiler '1. Validate and compile the Integration Definition'
+    gateway.definitions.compiler -> gateway.definitions.active_snapshot '2. Produce an immutable Integration Snapshot'
+    gateway.definitions.active_snapshot -> gateway.definitions.catalogue '3. Publish only configured model-visible capabilities'
+    gateway.definitions.catalogue -> gateway.ingress.mcp_server '4. Expose the catalogue over MCP'
+    gateway.deployments.nhs_gateway -> gateway.definitions.active_snapshot '5a. NHS process activates only its NHS snapshot'
+    gateway.deployments.northstar_gateway -> gateway.definitions.active_snapshot '5b. Northstar process activates only its Northstar snapshot'
+    autoLayout LeftRight
+  }
+}

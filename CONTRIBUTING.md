@@ -1,74 +1,74 @@
 # Contributing
 
-## Repository overview
+The system spans three independently versioned repositories. Make changes in
+the repository that owns the concern; do not create source-level coupling to
+make cross-repository work easier.
 
-This architecture spans three repositories. Each has independent CI, dependencies, and release cadence.
-
-| Repo | What changes here |
+| Repository | Change here when |
 |---|---|
-| `SovereignAgenticArchitecture` (this repo) | Workspace file, cross-zone docs, ADRs, onboarding |
-| `SovereignAgenticArchitectureZoneOne` | Edge runtime, LangGraph orchestration, Tauri desktop shell, MCP client |
-| `SovereignAgenticArchitectureZoneTwo` | Policy engine, audit, connectors, MCP server, Zone 3 integration |
+| Root documentation envelope | A term, context relationship, cross-zone contract, decision, architecture view, portal page, or root command changes |
+| Edge — Zone 1 | An Edge Experience, local orchestration, local model, MCP client, checkpoint, or App host changes |
+| Governance Gateway — Zone 2 | Authentication, policy, audit, Integration Definitions, connectors, projections, or the MCP server changes |
 
----
+## Work locally
 
-## Working locally
+Run `./setup.sh` once from this repository. It creates the sibling checkout
+layout used by the workspace and evidence tooling. The script leaves existing
+checkouts untouched.
 
-Run `./setup.sh` from this repo to clone both zones as siblings and get the VS Code workspace. See [README](README.md) for full setup steps.
+For documentation work:
 
----
-
-## The MCP transport boundary
-
-Zone 1 and Zone 2 are connected exclusively through Zone 2's MCP server. This is the only sanctioned interface between them.
-
-**Zone 1 must never:**
-- Import Zone 2 source code
-- Call Zone 2 internal Python functions directly
-- Reproduce Zone 2 policy logic locally
-- Access enterprise systems or Zone 3 without going through Zone 2
-
-Any change that touches this boundary requires coordinated PRs in both repos. Open both PRs at the same time and link them to each other. The Zone 2 change (server-side) should be merged first; the Zone 1 change (client-side) second.
-
-Read the [data boundary and projection contract](docs/data-boundary-and-projection-contract.md)
-before changing MCP results or Apps. App-enabled `structured_content` is a
-closed `{status, request_id, zone2_app}` envelope. The producer must not send a
-governed `result` or Projection-Private Field, and the consumer must reject
-unknown siblings. Contract PRs must include producer and consumer canary tests
-that inspect the complete MCP response.
-
----
-
-## PR conventions
-
-**Zone-internal changes** (most changes) — PR in the relevant zone repo only. No cross-repo coordination needed.
-
-**MCP contract changes** — open PRs in both zone repos simultaneously. Label both with `mcp-contract-change` and link them. Merge order: Zone 2 first, Zone 1 second.
-
-**Cross-zone docs and ADRs** — PR in this root repo.
-
----
-
-## Cross-zone ADRs
-
-Architecture decisions that span both zones or govern the boundary between them live in [`docs/adr/`](docs/adr/README.md). Zone-internal decisions live in each zone's own `docs/adr/` directory.
-
-Open a PR in this repo to propose or record a cross-zone ADR.
-
----
-
-## Quality gates
-
-Each zone enforces its own quality gates. Before raising a PR in either zone, run:
-
-**Zone 2:**
 ```bash
-make quality   # lint + typecheck + architecture + full test suite
+make docs-install
+make docs-dev
+make docs-check
 ```
 
-**Zone 1:**
-```bash
-make quality
-```
+`make docs-build` does not need either private zone checkout. `make
+docs-evidence` resolves every LikeC4 evidence reference at the revisions pinned
+in `architecture/evidence.lock.json` and therefore needs both repositories.
 
-The architecture gate (`import-linter`) is especially important — run it after any import change. It fails immediately and is unambiguous about which rule was violated.
+## Change the correct source of truth
+
+| Concern | Change |
+|---|---|
+| Cross-zone term | `docs/glossary.md` |
+| Bounded-context ownership or relationship | `CONTEXT-MAP.md` |
+| Topology, flow, status, or evidence badge | `architecture/` |
+| Exact cross-zone payload meaning | `docs/data-boundary-and-projection-contract.md` |
+| Cross-zone decision | `docs/adr/` |
+| Operational command | `Makefile` |
+| Zone behavior | The owning zone repository |
+
+Explanatory pages should link to these authorities instead of copying their
+definitions, payloads, or commands.
+
+## The MCP boundary
+
+Edge reaches the Governance Gateway only through the published MCP interface.
+It must not import Gateway code, call internal Python functions, reproduce
+policy, or reach Enterprise Intelligence & Resources directly.
+
+An MCP interface change requires coordinated pull requests. Update and merge
+the Zone 2 producer first, then update the Zone 1 consumer. Include producer
+and consumer contract tests and update the normative boundary contract when
+payload semantics change.
+
+## Architecture changes
+
+Every public LikeC4 element and relationship needs `owner`, `maturity`,
+`verification`, and at least one `evidence` reference. Keep maturity and proof
+independent. A prototype can be source-verified; an implemented path can still
+lack live proof.
+
+Pin changes are intentional documentation changes. Never update an evidence
+pin automatically. Regenerate the Graphify viewers from those same revisions
+after accepting a new pin.
+
+## Pull requests
+
+- Run `make docs-check` for root changes.
+- Run `make docs-evidence` in a trusted environment when architecture evidence changes.
+- Link coordinated zone pull requests and state their merge order.
+- Put zone-internal ADRs in the owning zone; reserve root ADRs for cross-zone decisions.
+- Mark plans, research, and audits as non-normative before publishing them.

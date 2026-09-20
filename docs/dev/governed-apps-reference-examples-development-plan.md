@@ -1,3 +1,13 @@
+---
+title: Governed Apps development plan
+sidebar_label: Governed Apps plan (historical)
+---
+
+:::caution Historical record
+This is a non-normative implementation record. Use the current architecture
+model, boundary contract, and evidence badges for present behaviour.
+:::
+
 # Governed Apps Reference Examples — Multi-Phase Development Plan
 
 > **Status:** Proposed implementation baseline
@@ -637,9 +647,9 @@ once that data-driven activation path has equivalent contract and regression
 coverage.
 
 That follow-on is now defined by the Zone 2
-[Integration Definition SDK v2 reference architecture](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-sdk-v2-reference-architecture.md)
+[Integration Definition SDK v2 reference architecture](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-sdk-v2-reference-architecture.md)
 and its
-[multi-phase development plan](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-sdk-v2-development-plan.md).
+[multi-phase development plan](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-sdk-v2-development-plan.md).
 Those documents preserve the cross-zone App envelope in this roadmap; they do
 not move definition authoring, compilation or activation into Zone 1.
 
@@ -649,9 +659,9 @@ architecture-protected empty `integration_administration` context, and reviewed
 metadata-only NHS/Northstar v1 characterization manifests. Runtime authority is
 unchanged and remains with legacy `UseCaseModule.register()`. The detailed
 evidence and remaining Podman-backed completion gate are recorded in the Zone 2
-[implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md)
+[implementation status](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/implementation-status.md)
 and the IDV2-0 section of the
-[development plan](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-sdk-v2-development-plan.md).
+[development plan](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-sdk-v2-development-plan.md).
 
 **IDV2-1 compiler-tracer status (2026-09-07):** Zone 2 now has a strict JSON
 authoring adapter, immutable typed `IntegrationDefinitionV2` SPOT, installed
@@ -661,7 +671,7 @@ plugins, bootstrap and live adapters; its output is not installed. Legacy
 `UseCaseModule.register()` therefore remains the only runtime authority. The
 closed first grammar, safe error catalogue and three-digest construction are
 carried forward in the Zone 2
-[authoritative v2 capability grammar](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-minimal-grammar.md).
+[authoritative v2 capability grammar](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-minimal-grammar.md).
 The root roadmap links that evidence rather than duplicating its evolving
 Zone 2 contract. IDV2-1 remains implemented but not marked complete until the
 inherited container-backed aggregate quality gate is green.
@@ -675,9 +685,9 @@ Projection-Private values; model and App projection inputs have no private
 accessor. Test-only characterization proves the NHS and Northstar capability
 catalogues are representable, but no compiled artefact is installed and legacy
 registration remains the only runtime authority. The authoritative contract is
-the Zone 2 [v2 capability grammar](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-minimal-grammar.md),
+the Zone 2 [v2 capability grammar](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-minimal-grammar.md),
 with measured gates in Zone 2
-[implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+[implementation status](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/implementation-status.md).
 The aggregate container-backed gate remains a completion prerequisite; this
 root document deliberately does not duplicate the evolving field grammar.
 
@@ -690,10 +700,10 @@ receive a Governed Outcome. Test-only characterization represents the NHS and
 Northstar list, detail, preview, confirmation and metric families without a
 profile branch in generic runtime code. These artefacts remain inactive and
 legacy registration remains authoritative. See the Zone 2
-[authoritative v2 grammar](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-minimal-grammar.md),
-[Integration author guide](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-presentation-author-guide.md)
+[authoritative v2 grammar](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-minimal-grammar.md),
+[Integration author guide](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-presentation-author-guide.md)
 and
-[measured implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+[measured implementation status](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/implementation-status.md).
 The locked Prefab/FastMCP dependency rerun and inherited container-backed
 quality gate remain open; this root roadmap does not duplicate their details.
 
@@ -703,8 +713,8 @@ runtime seam. Reasoning tools are a separate deny-by-default catalogue;
 registered/public capabilities are not implicitly exposed, server routing
 inputs remain bound, and transformed outputs are bounded. NHS and Northstar
 remain explicitly denied to Zone 3. The accepted Zone 2 decision and security
-analysis are [ADR-0031](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0031-explicit-reasoning-disclosures-and-runtime-catalogue-port.md)
-and the [Reasoning Disclosure threat model](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/security/reasoning-disclosure-threat-model.md).
+analysis are [ADR-0031](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0031-explicit-reasoning-disclosures-and-runtime-catalogue-port.md)
+and the [Reasoning Disclosure threat model](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/security/reasoning-disclosure-threat-model.md).
 Compiled snapshots remain inactive and the inherited aggregate gates remain
 open; detailed evidence stays in the linked Zone 2 implementation status.
 
@@ -715,8 +725,8 @@ activation/rollback, canonical PostgreSQL artefacts and a generic non-request
 activity audit identity. SQLAlchemy and JSONB mappings remain inside the Zone 2
 infrastructure adapter; no snapshot pointer is read by live bootstrap and the
 cross-zone MCP contract is unchanged. The normative implementation detail is in
-the Zone 2 [lifecycle and persistence reference](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-lifecycle-and-persistence.md)
-and [ADR-0032](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0032-generic-activity-audit-envelope.md).
+the Zone 2 [lifecycle and persistence reference](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-lifecycle-and-persistence.md)
+and [ADR-0032](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0032-generic-activity-audit-envelope.md).
 Focused non-container tests pass; the Podman/PostgreSQL and inherited locked-
 dependency aggregate gates remain open and are recorded, without duplicating
 their Zone 2 details, in the linked implementation status.
@@ -730,9 +740,9 @@ confirmations and App sessions to their exact starting generation. A dynamic
 FastMCP Provider serves only compiled model tools/prompts; App actions remain on
 the separate host-only surface and the Zone 1 wire is unchanged. NHS and
 Northstar remain on the default legacy path. The normative detail is in the
-Zone 2 [runtime activation reference](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-runtime-activation.md),
-[ADR-0033](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0033-database-authoritative-runtime-catalogue-convergence.md)
-and [implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+Zone 2 [runtime activation reference](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-runtime-activation.md),
+[ADR-0033](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0033-database-authoritative-runtime-catalogue-convergence.md)
+and [implementation status](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/implementation-status.md).
 Aggregate dependency, PostgreSQL, real-endpoint and cross-zone gates remain open
 and are intentionally not duplicated here.
 
@@ -744,10 +754,10 @@ establishes provenance only and cannot validate, publish or activate. Unsigned,
 inactive NHS and Northstar example packages are checked in and compiled in CI,
 but both profiles remain on `legacy_modules`. The exact envelope, authority,
 idempotency, persistence and audit rules are in the Zone 2
-[seed import guide](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-seed-import.md),
-[Python authoring guide](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/integration-definition-v2-python-authoring.md),
-[ADR-0034](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0034-definition-seed-provenance-and-draft-only-import.md)
-and [implementation status](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/implementation-status.md).
+[seed import guide](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-seed-import.md),
+[Python authoring guide](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/integration-definition-v2-python-authoring.md),
+[ADR-0034](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0034-definition-seed-provenance-and-draft-only-import.md)
+and [implementation status](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/implementation-status.md).
 The examples now include the complete reviewed 15-relationship NHS and
 21-relationship Northstar App-action graphs, with Back state held in Navigation
 Context rather than connector results. The remaining IDV2-4 runtime-behaviour
@@ -823,7 +833,7 @@ gates, run successfully in an environment that permits local listeners.
   with 7/5/4 review indicators over HTTP.
 - `patients.resolve` replaces bulk `patients.list`; `records.open_workspace` is
   model-visible while record index/page/preview targets are internal.
-- [Zone 2 NHS workspace design](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/nhs-record-workspace.md)
+- [Zone 2 NHS workspace design](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/nhs-record-workspace.md)
   documents the state machine, entitlement, cursor, preview and Integration
   Definition seams.
 - Named regressions include
@@ -873,9 +883,9 @@ pending dependency-lock synchronization and configured endpoint/desktop gates.
 - Zone 1 diagnostic prints were replaced with PHI-safe structured events carrying
   only interaction/action correlation, capability, ordinal/request correlation
   where available, and categorical outcomes.
-- [Zone 2 appointment design](../../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/nhs-appointment-workflow.md)
+- [Zone 2 appointment design](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/nhs-appointment-workflow.md)
   documents the selector, source clock, App state machine, authorization and
-  containment rules. [Zone 1 ADR-0034](../../../SovereignAgenticArchitectureZoneOne/docs/adr/0034-langgraph-1-checkpoints-use-exact-symbol-allowlists.md)
+  containment rules. [Zone 1 ADR-0034](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/10419805f78af9a22234e4cd1a504494ec6895b4/docs/adr/0034-langgraph-1-checkpoints-use-exact-symbol-allowlists.md)
   accepts LangGraph 1.x with no pickle fallback and exact-symbol checkpoint
   allowlists.
 - The focused Zone 2 request/projection/NHS/Northstar slice passes 94 tests and

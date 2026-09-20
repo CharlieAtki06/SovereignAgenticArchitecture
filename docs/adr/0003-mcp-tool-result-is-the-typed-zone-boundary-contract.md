@@ -6,8 +6,8 @@
 
 > **Amended by ADR-0008:** the liberal-in posture remains only for the temporary
 > non-App result union. App-enabled completions have independent strict producer
-> and consumer models and forbid any structured sibling beside `status`,
-> `request_id`, and `zone2_app`.
+> and consumer models and use the closed projection-only shape defined by the
+> [normative boundary contract](../data-boundary-and-projection-contract.md).
 
 ## Context
 

@@ -1,0 +1,24 @@
+{
+  "$schema": "./evidence-lock.schema.json",
+  "version": 1,
+  "repositories": {
+    "root": {
+      "repositoryUrl": "https://github.com/CharlieAtki06/SovereignAgenticArchitecture.git",
+      "visibility": "public",
+      "commit": null,
+      "localPath": "."
+    },
+    "zone1": {
+      "repositoryUrl": "https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne.git",
+      "visibility": "private",
+      "commit": "10419805f78af9a22234e4cd1a504494ec6895b4",
+      "localPath": "../SovereignAgenticArchitectureZoneOne"
+    },
+    "zone2": {
+      "repositoryUrl": "https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo.git",
+      "visibility": "private",
+      "commit": "0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6",
+      "localPath": "../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo"
+    }
+  }
+}

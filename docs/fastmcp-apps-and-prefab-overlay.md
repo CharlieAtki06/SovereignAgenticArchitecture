@@ -1,10 +1,16 @@
-# FastMCP Apps and Prefab Overlay — Architecture Reference
+---
+title: FastMCP Apps and Prefab presentation
+sidebar_position: 3
+---
+
+# FastMCP Apps and Prefab presentation — architecture reference
 
 This document explains how FastMCP Apps, Prefab overlays, and the sandboxed iframe bridge work across all three zones. It is written for developers who are new to this system and need to understand the full picture before touching any of these layers.
 
 Cross-references:
-- [ADR-0028](../../SovereignAgenticArchitectureZoneOne/docs/adr/0028-prefab-renderer-sandboxed-iframe-over-native-react-components.md) — sandboxed iframe decision record
-- [confirmation-and-overlay-integration.md](../../SovereignAgenticArchitectureZoneOne/docs/dev/confirmation-and-overlay-integration.md) — cross-zone integration contract
+
+- [ADR-0028](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/10419805f78af9a22234e4cd1a504494ec6895b4/docs/adr/0028-prefab-renderer-sandboxed-iframe-over-native-react-components.md) — sandboxed iframe decision record
+- [confirmation-and-overlay-integration.md](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/10419805f78af9a22234e4cd1a504494ec6895b4/docs/dev/confirmation-and-overlay-integration.md) — cross-zone integration contract
 
 ---
 
@@ -57,69 +63,9 @@ There are two deliberately separate paths through the system:
   `/mcp/app-actions` mount. It is not a model tool and never becomes a
   conversation turn.
 
-```mermaid
-%%{init: {'flowchart': {'padding': 24, 'nodeSpacing': 50, 'rankSpacing': 90, 'curve': 'linear'}}}%%
-flowchart LR
-    User([User])
+<ArchitectureView viewId="flow_app_completion" mode="embedded" />
 
-    subgraph Z1["Zone 1 — Desktop Shell (Tauri + React)"]
-        direction TB
-
-        subgraph UI["React UI"]
-            Conv["ConversationView"]
-            Panel["PrefabOverlayPanel"]
-            App["&lt;iframe sandbox&gt;  MCP App"]
-        end
-
-        subgraph Sidecar["Python Sidecar"]
-            HI["HandleInteraction"]
-            subgraph LG["LangGraph"]
-                Loop["ReAct loop"]
-                Mdl["Local model"]
-                Loop --> Mdl
-                Mdl -->|tools/call| Loop
-            end
-            AD["AppActionDispatcher"]
-            CG["GovernedCapabilityGateway"]
-            AG["AppActionGateway"]
-            HI --> LG --> CG
-            AD --> AG
-        end
-    end
-
-    subgraph Z2["Zone 2 — Governed Mediation"]
-        direction TB
-        Gvn["authn → policy → capability → dual projection"]
-        Act["App-action catalogue → governed request → replacement App"]
-        Sess[("AppInteractionSession  Redis")]
-        Gvn --- Sess
-        Act --- Sess
-    end
-
-    subgraph Z3["Zone 3"]
-        direction TB
-        LLM["Reasoning model"]
-        Data[("Enterprise sources")]
-    end
-
-    style Z1 fill:#e4ebf5,stroke:#5b7ba8,stroke-width:3px
-    style UI fill:#f0f4fa,stroke:#a0b4cc,stroke-width:1px
-    style Sidecar fill:#f0f4fa,stroke:#a0b4cc,stroke-width:1px
-    style LG fill:#d9e4f0,stroke:#5b7ba8,stroke-width:1px
-    style Z2 fill:#f5f0e4,stroke:#a08040,stroke-width:3px
-    style Z3 fill:#eeebf5,stroke:#7d6d9a,stroke-width:3px
-
-    User -->|query| Conv
-    Conv -->|"① POST /v1/interaction"| HI
-    HI -.->|"safe text + App tree"| Conv
-    App -->|"② tools/call: apps.execute_action"| Panel
-    Panel --> AD
-    CG -->|MCP /mcp| Gvn
-    AG -->|MCP /mcp/app-actions| Act
-    Gvn -.->|"ToolResult content + App tree"| CG
-    Act -.->|"empty content + typed App update"| AG
-    Gvn -->|connector boundary| Z3
-```
+<ArchitectureView viewId="flow_app_action" mode="embedded" />
 
 Zone 1 never imports Zone 2. The two typed Zone 1 gateways are its only Zone 2
 exit points: `GovernedCapabilityGateway` for model-selected semantic
@@ -145,6 +91,7 @@ definition = (
 ```
 
 `McpAppDefinition` (frozen dataclass, `apps/contracts.py`):
+
 ```python
 @dataclass(frozen=True)
 class McpAppDefinition:
@@ -167,6 +114,7 @@ Three generic factories cover the common visual patterns:
 | `BookingConfirmationFactory` | Booking confirmation | `fields`, `app_title`, `status_key` |
 
 All four live in `src/zone2/apps/factories/`. They implement `ViewFactory`:
+
 ```python
 class ViewFactory(Protocol):
     def build(self, data: Mapping[str, Any]) -> PrefabApp: ...
@@ -229,26 +177,11 @@ Unicode code points. This is the only tool-derived content that may enter the
 local model's conversation history. It is not JSON-parsed and Zone 1 never
 reconstructs it from governed fields.
 
-**`structured_content`** — the closed App Presentation envelope:
-```json
-{
-  "status": "completed",
-  "request_id": "...",
-  "zone2_app": {
-    "$prefab": { "version": "0.3" },
-    "view": { "type": "Div", "children": [ ... ] }
-  }
-}
-```
-
-**`_meta`** — MCP metadata (separate from the governed envelope):
-```json
-{
-  "zone2/app_session_id": "<opaque>",
-  "zone2/app_action_handles": ["<opaque>"],
-  "zone2/presentation_revision": 0
-}
-```
+**`structured_content`** carries the closed, authorised App Presentation.
+**`_meta`** carries only opaque host lifecycle metadata. The exact keys,
+cardinality, limits, and rejection rules are defined solely by the
+[data-boundary contract](data-boundary-and-projection-contract.md); this
+explanatory guide deliberately does not duplicate the wire shape.
 
 The complete governed result remains inside Zone 2. Projection-private
 top-level fields (such as cursors and view state) and row fields (such as source
@@ -258,15 +191,15 @@ and server-held action grants. They are never siblings in this envelope.
 For App-enabled results, Zone 1 maps the two audience projections independently:
 
 ```text
-ToolResult.content                         → Model Observation → LangGraph tool turn
-structured_content.zone2_app + _meta       → App Presentation  → sandboxed renderer
-Governed Outcome + Projection-Private Data → remain in Zone 2
+model-audience channel                     → Model Observation → LangGraph tool turn
+human-audience channel + lifecycle metadata → App Presentation → sandboxed renderer
+Governed Outcome + Projection-Private Data  → remain in Zone 2
 ```
 
-Zone 1 treats `structured_content` as a closed contract: any sibling other than
-`status`, `request_id` and `zone2_app` fails the interaction. This turns an
-accidental reintroduction of `result` or `provenance` into a visible contract
-failure rather than a silent data transfer.
+Zone 1 treats `structured_content` as a closed contract: every undeclared
+sibling fails the interaction. This turns an accidental reintroduction of a
+governed or projection-private field into a visible contract failure rather
+than a silent data transfer.
 
 The App Presentation is response-scoped rather than conversation state: it is
 not placed in model history or LangGraph checkpoints. If the App is valid but
@@ -319,7 +252,7 @@ sequenceDiagram
 
 The renderer HTML is fetched once from the sidecar (`GET /v1/prefab-renderer` → Tauri `get_prefab_renderer`). Before setting `srcDoc`, Zone 1 injects the overlay JSON into the HTML:
 
-```
+```text
 renderer HTML                     Modified HTML (srcDoc)
 ─────────────────────────         ───────────────────────────────────────────
 <html>                            <html>
@@ -570,7 +503,7 @@ sequenceDiagram
     participant AD as AppActionDispatcher
     participant AG as AppActionGateway
 
-    Z2->>GW: ToolResult\ncontent = ModelObservation\nstructured_content = status + request_id + zone2_app\n_meta = private session + handles
+    Z2->>GW: closed projection-only ToolResult\nModel Observation + App Presentation\nopaque lifecycle metadata
     GW->>HI: ProjectedAppCompletedOutcome\nModelObservation + AppPresentation
     HI->>HI: AppInstanceRepository.create_for_result\nprivate session, revision and handles stored
     HI->>Desktop: DirectResponseResultWire\napp_instance_id + revision + app_overlay
@@ -652,6 +585,7 @@ The production implementation (`TauriRuntimeTransport`) delegates to Tauri comma
 This is the process a Zone 2 developer follows to add a new governed capability that produces a visual overlay. **Zone 1 requires no changes.**
 
 **Step 1 — Define the capability** in Zone 2 (`src/zone2/plugins/<domain>/capabilities.py`):
+
 ```python
 MY_CAPABILITY = CapabilityDefinition(
     capability_id="domain.list",
@@ -661,6 +595,7 @@ MY_CAPABILITY = CapabilityDefinition(
 ```
 
 **Step 2 — Build an overlay definition** using the fluent builder:
+
 ```python
 from zone2.apps.builder import AppOverlay
 from zone2.apps.factories import PaginatedListFactory
@@ -680,6 +615,7 @@ MY_APP_DEFINITION = (
 
 **Step 3 — Declare the semantic capability and human actions separately** via
 `ContainerModuleRegistry`:
+
 ```python
 registry.register_capability(MY_CAPABILITY, app_overlay=MY_APP_DEFINITION)
 
@@ -733,6 +669,7 @@ the FastMCP 4 beta line (`>=4.0.0b1,<5`); FastMCP's own Apps guidance recommends
 pinning Prefab because its API evolves frequently.
 
 `prefab_ui` is the single source of truth for:
+
 - The `PrefabApp` Python types Zone 2 uses to build trees
 - The renderer HTML bundle Zone 1 serves from `GET /v1/prefab-renderer`
 

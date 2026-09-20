@@ -1,3 +1,13 @@
+---
+title: LangGraph and FastMCP research
+sidebar_label: LangGraph/FastMCP research
+---
+
+:::caution Research, not architecture authority
+This material records external patterns and design exploration. It does not
+override the LikeC4 model, boundary contract, or accepted ADRs.
+:::
+
 # LangGraph + FastMCP v4 ReAct Production Patterns
 
 **Date researched:** 2026-08-08  
@@ -59,7 +69,7 @@ create_react_agent(
 
 The generated graph (v2) has this topology:
 
-```
+```text
 START → [pre_model_hook →] agent → [post_model_hook →] tools → agent
                                                                ↓
                                                               END
@@ -80,6 +90,7 @@ For Zone 1/Zone 2 where every tool call goes through a separate governance check
 ### Loop Termination
 
 The loop terminates when:
+
 1. The LLM returns an AIMessage with no `tool_calls` (normal completion).
 2. `remaining_steps` is exhausted — the agent returns `"Sorry, need more steps to process this request."` instead of making another call. The `remaining_steps` managed channel is tracked automatically by the prebuilt graph.
 3. The graph hits the `recursion_limit` config — raises `GraphRecursionError`. Default limit is 25 super-steps.
@@ -98,12 +109,14 @@ For a small context window model like gemma4, limiting to 10–15 tool-call loop
 ### `create_react_agent` vs Custom `StateGraph`
 
 **Use `create_react_agent` (prebuilt) when:**
+
 - Standard tool-calling loop: call model → execute tools → repeat
 - You need HITL via `interrupt_before`/`interrupt_after`
 - You need `pre_model_hook` for context trimming or `post_model_hook` for approval gates
 - You want to embed the agent as a subgraph inside a larger custom `StateGraph`
 
 **Build a custom `StateGraph` when:**
+
 - Parallel node execution beyond what v2 Send provides
 - Supervisor-worker multi-agent patterns
 - Complex conditional routing based on domain logic, not just tool_calls presence
@@ -538,6 +551,7 @@ class BudgetedToolNode(ToolNode):
 `MessagesState` (from `langgraph.graph`) is the canonical state type for agent graphs. It uses the `add_messages` reducer which merges incoming messages by ID. Source: [GitHub — langgraph/libs/langgraph/langgraph/graph/message.py](https://github.com/langchain-ai/langgraph/blob/main/libs/langgraph/langgraph/graph/message.py)
 
 Key behaviours:
+
 - Messages with the same `id` **replace** existing messages (enables editing tool calls).
 - A `RemoveMessage` object with a given ID **deletes** that message from state.
 - A `REMOVE_ALL_MESSAGES` token **clears the entire history**.
@@ -748,6 +762,7 @@ agent = create_react_agent(model, governed_tool_node)  # pass ToolNode directly
 ### Pattern 5: `tool_call_id` as the Correlation Key
 
 Every tool execution in LangGraph has a `tool_call_id` that links:
+
 - The `AIMessage.tool_calls[n]["id"]` — what the model requested
 - The `ToolMessage.tool_call_id` — what was returned
 - `ToolRuntime.tool_call_id` — accessible inside the tool

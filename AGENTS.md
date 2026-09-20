@@ -1,95 +1,68 @@
-# AGENTS.md — Sovereign Agentic Architecture (Root)
+# AGENTS.md — Sovereign Agentic Architecture root
 
-This is the root envelope for a three-zone agentic architecture designed for enterprise AI with deterministic governance. It holds the VS Code multi-root workspace, cross-zone documentation, and onboarding tooling. The zone source code lives in separate repositories.
+This repository is the documentation and orchestration envelope for a
+three-zone enterprise AI architecture. Zone application source lives in two
+separate repositories.
 
----
+## Canonical zone names
 
-## The three zones
+- **Edge — Zone 1** contains Edge Experiences and the Edge Runtime.
+- **Governance Gateway — Zone 2** authenticates, evaluates policy, audits,
+  executes connectors, and projects results deterministically. It is not a
+  reasoning agent.
+- **Enterprise Intelligence & Resources — Zone 3** contains the Reasoning
+  Plane and Systems of Record.
 
-**Zone 1 — Edge Runtime** (`SovereignAgenticArchitectureZoneOne`)
-Local function-calling model + LangGraph + MCP client. Discovers what Zone 2 exposes, invokes it through a governed MCP channel, and presents results through a sandboxed Prefab surface in the Tauri desktop shell. Cannot access enterprise systems or Zone 3 directly.
+These are documentation labels. Do not rename existing code identifiers merely
+to match them. The sole cross-zone vocabulary authority is
+`docs/glossary.md`; bounded contexts and their relationships are owned by
+`CONTEXT-MAP.md`.
 
-**Zone 2 — Governed Mediation** (`SovereignAgenticArchitectureZoneTwo`)
-The gatekeeper. Authenticates callers, evaluates policy deterministically, records every decision to an immutable audit log, executes the appropriate enterprise connector, and strips responses to only permitted fields. Not a reasoning agent — a governance runtime.
+## Boundary rule
 
-**Zone 3 — Reasoning Model + Enterprise Sources**
-Large reasoning LLM and enterprise data sources (FHIR, SQL, third-party APIs). Only reachable through Zone 2's connector boundary. Never directly from Zone 1.
+Edge consumes the Governance Gateway exclusively through the Gateway's
+published MCP interface. Edge must never import Gateway source, call Gateway
+internals, reproduce Gateway policy, or access enterprise resources directly.
 
----
+For an App-enabled completion, only the compact Model Observation, authorised
+App Presentation, and opaque lifecycle metadata cross to Edge. The Governed
+Outcome and private source, subject, cursor, action-target, provenance, and
+result fields remain in the Gateway. Exact shapes live only in
+`docs/data-boundary-and-projection-contract.md` and ADR-0008.
 
-## The boundary that must never be crossed
+## Local repositories
 
-Zone 1 consumes Zone 2 exclusively through Zone 2's published MCP interface. This is enforced as an architecture rule, not a convention.
-
-Zone 1 must never:
-- Import Zone 2 source code
-- Call Zone 2 internal Python functions directly
-- Reproduce Zone 2 policy logic locally
-- Access Zone 3 or enterprise systems without going through Zone 2
-
-Any task that appears to require crossing this boundary is a signal that something is being added to the wrong zone.
-
-For an App-enabled completion, Zone 2 sends only the compact Model Observation,
-the authorised App Presentation, and opaque lifecycle metadata. It never sends
-the Governed Outcome, `result`, `provenance`, cursor, Subject/source reference,
-or internal action target. Zone 1 must reject extra App-envelope fields. The
-normative shapes are in `docs/data-boundary-and-projection-contract.md` and
-cross-zone ADR-0008.
-
----
-
-## Working across zones
-
-When a task crosses the Zone 1 / Zone 2 boundary, reference both repos explicitly:
-
-```
-Zone 1 is in:
-#Zone 1 — Edge Runtime
-
-Zone 2 is in:
-#Zone 2 — Governed Layer
-```
-
-Changes to the MCP interface must be coordinated: Zone 2 (server side) merged first, Zone 1 (client side) second.
-
----
-
-## Repository locations (relative to this file)
-
-| Zone | Local path |
+| Area | Path relative to this file |
 |---|---|
-| Zone 1 | `../SovereignAgenticArchitectureZoneOne/SovereignAgenticArchitectureZoneOne` |
-| Zone 2 | `../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo` |
+| Edge — Zone 1 | `../SovereignAgenticArchitectureZoneOne` |
+| Governance Gateway — Zone 2 | `../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo` |
 
----
+Cross-boundary interface changes require coordinated work: merge the Gateway
+producer first and the Edge consumer second.
 
-## Cross-zone ADRs
+## Root ownership
 
-Architecture decisions governing the boundary between zones live in `docs/adr/` in this repo. Zone-internal decisions live in each zone's own `docs/adr/`.
+This repository owns:
 
----
+- `architecture/` — canonical LikeC4 topology, flows, metadata, and evidence lock;
+- `docs/glossary.md` and `CONTEXT-MAP.md` — ubiquitous language and context relationships;
+- `docs/adr/` — cross-zone decisions;
+- `docs/data-boundary-and-projection-contract.md` — exact cross-zone payload semantics;
+- `portal/` — the public Docusaurus atlas, presenter, and reference;
+- `docs/graphs/` — pinned Graphify evidence viewers;
+- `Makefile`, `setup.sh`, and the multi-root workspace — operator entry points.
 
-## Codebase graph viewer
+Do not add zone source, zone-specific runtime configuration, or duplicated
+zone-internal documentation here. Ordinary Markdown remains ordinary content;
+architecture topology belongs in LikeC4.
 
-`docs/graphs/zone1/graph.html` and `docs/graphs/zone2/graph.html` are committed interactive viewers generated by graphify. Open them in a browser to explore each zone's module structure without installing anything.
+## Verification
 
-To regenerate (requires graphify installed globally — `uv tool install graphifyy`):
-```bash
-./scripts/generate-graphs.sh
-```
+Use `make docs-check` for model, content, type, unit, build, accessibility, and
+browser checks. Use `make docs-evidence` only where both private repositories
+are available. Generated LikeC4 React files and staged Graphify assets are not
+committed.
 
-Per-zone AI context (`graph.json`) lives in each zone's repo and is gitignored there. Run `/graphify .` inside a Codex session in the relevant zone to regenerate the AI-queryable graph.
-
----
-
-## What belongs in this repo
-
-- `SovereignAgenticArchitecture.code-workspace` — the VS Code multi-root workspace
-- `setup.sh` — bootstrap script to clone both zones
-- `scripts/generate-graphs.sh` — regenerates the graphify viewers from both zones
-- `docs/adr/` — cross-zone architecture decisions
-- `docs/graphs/` — committed interactive graph viewers for Zone 1 and Zone 2
-- `CONTRIBUTING.md` — cross-boundary development workflow
-- `AGENTS.md` — this file
-
-Do not add zone source code, zone-specific configuration, or zone-internal docs here.
+When `/graphify` is explicitly invoked, follow the installed Graphify skill
+before doing other work. Graphify is code evidence, never the canonical public
+system model.

@@ -5,11 +5,11 @@
       "path": "."
     },
     {
-      "name": "Zone 1 — Edge Runtime",
+      "name": "Edge — Zone 1",
       "path": "../SovereignAgenticArchitectureZoneOne"
     },
     {
-      "name": "Zone 2 — Governed Layer",
+      "name": "Governance Gateway — Zone 2",
       "path": "../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo"
     }
   ],
@@ -20,7 +20,10 @@
       "**/.mypy_cache": true,
       "**/.ruff_cache": true,
       "**/.pytest_cache": true,
-      "**/.import_linter_cache": true
+      "**/.import_linter_cache": true,
+      "**/.docusaurus": true,
+      "**/portal/build": true,
+      "**/portal/node_modules": true
     },
     "search.exclude": {
       "**/__pycache__": true,
@@ -33,7 +36,8 @@
       "ms-python.python",
       "ms-python.pylance",
       "charliermarsh.ruff",
-      "ms-python.mypy-type-checker"
+      "ms-python.mypy-type-checker",
+      "likec4.likec4-vscode"
     ]
   }
 }

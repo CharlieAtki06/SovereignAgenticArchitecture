@@ -1,0 +1,73 @@
+specification {
+  color edge_zone_color #0f766e
+  color gateway_zone_color #1d4ed8
+  color enterprise_zone_color #7c3aed
+
+  element zone {
+    style {
+      shape rectangle
+      opacity 10%
+      border solid
+    }
+  }
+
+  element area {
+    style {
+      shape rectangle
+    }
+  }
+
+  element component {
+    style {
+      shape rectangle
+    }
+  }
+
+  element experience {
+    style {
+      shape browser
+    }
+  }
+
+  element resource {
+    style {
+      shape cylinder
+    }
+  }
+
+  element deployment {
+    style {
+      shape rectangle
+    }
+  }
+
+  // Colour communicates trust/deployment-zone identity only. Maturity and
+  // verification remain independent textual metadata dimensions in the portal.
+  tag zone_edge {
+    color #0f766e
+  }
+
+  tag zone_gateway {
+    color #1d4ed8
+  }
+
+  tag zone_enterprise {
+    color #7c3aed
+  }
+}
+
+global {
+  styleGroup zone_identity {
+    style element.tag = #zone_edge {
+      color edge_zone_color
+    }
+
+    style element.tag = #zone_gateway {
+      color gateway_zone_color
+    }
+
+    style element.tag = #zone_enterprise {
+      color enterprise_zone_color
+    }
+  }
+}

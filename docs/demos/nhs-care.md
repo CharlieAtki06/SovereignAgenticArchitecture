@@ -7,6 +7,12 @@ which explains shared profile ownership, startup, authentication and reset rules
 The demo uses synthetic/mock clinical data. It is a governed-access demonstration,
 not a clinical system and not a source of patient-care advice.
 
+At the revisions pinned by the root architecture evidence lock, this NHS
+profile has no Invocation or Tool Disclosures and remains denied to the
+Reasoning Plane. Use the workflow to demonstrate the core governed path,
+two-audience projection, and host-only App actions; do not present it as live
+proof of autonomous large-model tool use.
+
 ## Start the desktop application
 
 For the normal interactive NHS demonstration, run this from the root workspace:

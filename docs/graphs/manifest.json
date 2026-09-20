@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-09-19T10:36:49Z",
+  "generator": {
+    "name": "graphifyy",
+    "version": "0.9.35",
+    "mode": "code-only",
+    "limitation": "Community labels use deterministic placeholders because regeneration is offline; use search and source-file paths for code navigation."
+  },
+  "sources": {
+    "zone1": {
+      "repository": "https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne",
+      "commit": "10419805f78af9a22234e4cd1a504494ec6895b4",
+      "extraction": "clean git archive",
+      "nodes": 3831,
+      "edges": 8917,
+      "viewer": "zone1/graph.html",
+      "sha256": "c8ef4b2449e68c898e82b42ad4c89edf943cd14dd1df208a97a633972f970cb9"
+    },
+    "zone2": {
+      "repository": "https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo",
+      "commit": "0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6",
+      "extraction": "clean git archive",
+      "nodes": 5274,
+      "edges": 20011,
+      "viewer": "zone2/graph.html",
+      "sha256": "9d6b3c7f0b83c465f262825566e996fe824088b275f6fb6be7c4cebaa07e36d7"
+    }
+  }
+}

@@ -5,8 +5,8 @@
 Accepted.
 
 > **Amended by ADR-0008.** App-enabled completions no longer carry a governed
-> `result` for Zone 1 to discard. Their closed `structured_content` envelope
-> contains only `status`, `request_id` and `zone2_app`.
+> result for Zone 1 to discard. The closed wire shape is defined only by the
+> [normative boundary contract](../data-boundary-and-projection-contract.md).
 
 ## Context
 
@@ -26,7 +26,7 @@ outputs at the Zone 1 MCP anti-corruption seam:
 | Output | Source | Permitted consumer |
 |---|---|---|
 | Model Observation | exactly one non-empty `ToolResult.content` text block, at most 1,024 Unicode code points | Zone 1 local-model tool history only |
-| App Presentation | `structured_content["zone2_app"]` plus the opaque `zone2/app_session_id` metadata value | authorised Zone 1 App-hosting path only |
+| App Presentation | Authorised presentation channel plus opaque host lifecycle metadata | authorised Zone 1 App-hosting path only |
 
 Zone 1 validates and maps the published MCP result but does not derive one
 projection from the other. It does not inspect domain fields, reapply policy,
@@ -59,7 +59,9 @@ in Zone 1's App-instance lifecycle state.
 
 The raw governed outcome and projection-private routing values remain in Zone 2.
 They are absent from the App-enabled MCP completion, not merely ignored by the
-Zone 1 mapper. See ADR-0008 for the exact wire envelopes.
+Zone 1 mapper. See the
+[normative boundary contract](../data-boundary-and-projection-contract.md) for
+the exact wire semantics.
 
 ## Consequences
 

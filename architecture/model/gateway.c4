@@ -1,0 +1,615 @@
+model {
+  gateway = zone 'Governance Gateway — Zone 2' 'Deterministic mediation; it is not a reasoning agent.' {
+    #zone_gateway
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/system-map.md'
+      constraint_1 'Cannot act as a reasoning agent or let Edge bypass deterministic governance.'
+      constraint_2 'Cannot return the private Governed Outcome to Edge.'
+    }
+
+    ingress = area 'Published MCP Boundary' 'The only published Zone 2 interface consumed by Edge runtimes.' {
+      #zone_gateway
+      metadata {
+        owner 'zone2'
+        maturity 'implemented'
+        verification 'automated'
+        evidence 'zone2:src'
+        constraint_1 'Cannot expose Gateway internals as an Edge integration surface.'
+      }
+
+      mcp_server = component 'FastMCP Server' 'Publishes capability discovery, invocation, confirmation, and App continuation.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot execute a connector before authentication and deterministic policy admission.'
+        }
+      }
+
+      authentication = component 'Caller Authentication' 'Verifies the caller before an invocation is admitted.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot authorise an invocation; authentication establishes caller identity only.'
+        }
+      }
+    }
+
+    governance = area 'Policy and Audit' 'Deterministic admission, confirmation, and immutable decision recording.' {
+      #zone_gateway
+      metadata {
+        owner 'zone2'
+        maturity 'implemented'
+        verification 'automated'
+        evidence 'zone2:src'
+        constraint_1 'Cannot delegate admission decisions to either an Edge model or a Zone 3 model.'
+      }
+
+      policy = component 'Policy Engine' 'Evaluates compiled policy deterministically.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot perform reasoning or access enterprise resources itself.'
+          outcome_allow 'Admit the bounded invocation to the configured execution path.'
+          outcome_confirm 'Pause the invocation until an explicit confirmation challenge is validly completed.'
+          outcome_deny 'Stop the invocation before connector execution.'
+          outcome_audit 'Record every admission decision and subsequent confirmation transition.'
+        }
+      }
+
+      confirmation = component 'Confirmation Lifecycle' 'Creates and resumes explicit approval challenges.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot resume an invocation without a valid explicit confirmation.'
+        }
+      }
+
+      denied_outcome = component 'Denied Invocation' 'A policy decision that stops the invocation before connector execution.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot execute connector work or disclose an enterprise result.'
+        }
+      }
+
+      audit = component 'Immutable Audit Log' 'Records admission and outcome decisions.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot make or override admission decisions.'
+        }
+      }
+    }
+
+    definitions = area 'Integration Definitions' 'Turns reviewed declarations into immutable runtime snapshots; definitions declare governed behaviour while installed adapters perform enterprise work.' {
+      #zone_gateway
+      metadata {
+        owner 'zone2'
+        maturity 'implemented'
+        verification 'automated'
+        evidence 'zone2:src'
+        constraint_1 'Cannot dynamically multiplex multiple active integrations in one Gateway process.'
+      }
+
+      source = component 'Reviewed Integration Definition' 'Reviewed declaration of capabilities, policy, projections, Apps, connector bindings, and reasoning disclosures.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'source'
+          evidence 'zone2:examples/integration-definition-seeds'
+          constraint_1 'Cannot provide new executable connector behaviour; it may bind only installed adapters and cannot become active until it validates and compiles.'
+        }
+      }
+
+      compiler = component 'Snapshot Compiler' 'Validates and compiles a versioned Integration Snapshot.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot activate an invalid or mutable snapshot.'
+        }
+      }
+
+      active_snapshot = component 'Active Integration Snapshot' 'Immutable runtime configuration selected at process startup.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          limitation 'Active-snapshot runtime mode is opt-in; legacy module registration remains the default.'
+          constraint_1 'Cannot represent more than one active integration in a Gateway process.'
+        }
+      }
+
+      catalogue = component 'Published Capability Catalogue' 'Projects the active snapshot into model-visible MCP tools.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot publish capabilities absent from the active Integration Snapshot.'
+        }
+      }
+    }
+
+    execution = area 'Governed Execution' 'Executes admitted capabilities through bounded enterprise connectors.' {
+      #zone_gateway
+      metadata {
+        owner 'zone2'
+        maturity 'implemented'
+        verification 'automated'
+        evidence 'zone2:src'
+        constraint_1 'Cannot execute an invocation that deterministic policy has not admitted.'
+      }
+
+      orchestrator = component 'Capability Orchestrator' 'Coordinates admitted connector work without autonomous reasoning.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot reason autonomously or bypass configured connector bindings.'
+        }
+      }
+
+      connector_boundary = component 'Enterprise Connector Boundary' 'Adapters for LLMs, FHIR, SQL, documents, and third-party APIs.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:src'
+          constraint_1 'Cannot expose raw enterprise responses directly to Edge.'
+        }
+      }
+
+      reasoning_connector = component 'Zone 3 Reasoning Connector' 'Enforces compiled Invocation and Tool Disclosures while mediating bounded reasoning and disclosed tool requests.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'live'
+          evidence 'zone2:src'
+          limitation 'Single-shot Ollama reasoning is live-proven; autonomous disclosed tool use is automated-tested but not yet live-proven.'
+          constraint_1 'Cannot expose an undisclosed tool or field; admitted tool subcalls remain inside the outer invocation and do not re-enter policy for a fresh decision.'
+        }
+      }
+    }
+
+    projection = area 'Outcome Projection' 'Separates the model audience from the human App audience.' {
+      #zone_gateway
+      metadata {
+        owner 'zone2'
+        maturity 'implemented'
+        verification 'automated'
+        evidence 'root:docs/data-boundary-and-projection-contract.md'
+        constraint_1 'Cannot send the private Governed Outcome to Edge wholesale.'
+      }
+
+      model_observation = component 'Model Observation' 'Compact model-visible result.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'root:docs/data-boundary-and-projection-contract.md'
+          constraint_1 'Cannot contain App Presentation data or projection-private fields.'
+        }
+      }
+
+      app_presentation = component 'Authorised App Presentation' 'Human-facing payload for the sandboxed App host.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'root:docs/data-boundary-and-projection-contract.md'
+          constraint_1 'Cannot expose the private Governed Outcome, provenance, source references, or internal action targets.'
+        }
+      }
+
+      projector = component 'Response Projector' 'Strips private outcome fields and emits only authorised audience projections.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'root:docs/data-boundary-and-projection-contract.md'
+          constraint_1 'Cannot pass private outcome fields through without the configured audience projection.'
+        }
+      }
+    }
+
+    deployments = area 'Gateway Deployments' 'Each process activates exactly one integration.' {
+      #zone_gateway
+      metadata {
+        owner 'zone2'
+        maturity 'implemented'
+        verification 'source'
+        evidence 'root:docs/deployment-topology.md'
+        constraint_1 'Cannot serve more than one active integration from the same process.'
+      }
+
+      nhs_gateway = deployment 'NHS Gateway Deployment' 'A Zone 2 process with only the NHS Integration Snapshot active.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:examples/integration-definition-seeds/nhs.seed.json'
+          limitation 'This process never dynamically multiplexes the Northstar integration.'
+          constraint_1 'Cannot activate or advertise the Northstar integration in this process.'
+        }
+
+        mcp_endpoint = component 'NHS Published MCP Endpoint' 'The published MCP ingress for the dedicated NHS Gateway process.' {
+          #zone_gateway
+          metadata {
+            owner 'zone2'
+            maturity 'implemented'
+            verification 'automated'
+            evidence 'zone2:examples/integration-definition-seeds/nhs.seed.json'
+            constraint_1 'Cannot expose a non-MCP integration surface or bypass authentication and policy.'
+          }
+        }
+
+        governed_runtime = component 'NHS Governed Runtime' 'The process-local authentication, policy, audit, projection, and connector path for NHS.' {
+          #zone_gateway
+          metadata {
+            owner 'zone2'
+            maturity 'implemented'
+            verification 'automated'
+            evidence 'zone2:examples/integration-definition-seeds/nhs.seed.json'
+            constraint_1 'Cannot execute unadmitted work or serve the Northstar integration.'
+          }
+        }
+      }
+
+      northstar_gateway = deployment 'Northstar Gateway Deployment' 'A separate Zone 2 process with only the Northstar Integration Snapshot active.' {
+        #zone_gateway
+        metadata {
+          owner 'zone2'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone2:examples/integration-definition-seeds/northstar.seed.json'
+          limitation 'This process never dynamically multiplexes the NHS integration.'
+          constraint_1 'Cannot activate or advertise the NHS integration in this process.'
+        }
+
+        mcp_endpoint = component 'Northstar Published MCP Endpoint' 'The published MCP ingress for the separate Northstar Gateway process.' {
+          #zone_gateway
+          metadata {
+            owner 'zone2'
+            maturity 'implemented'
+            verification 'automated'
+            evidence 'zone2:examples/integration-definition-seeds/northstar.seed.json'
+            constraint_1 'Cannot expose a non-MCP integration surface or bypass authentication and policy.'
+          }
+        }
+
+        governed_runtime = component 'Northstar Governed Runtime' 'The process-local authentication, policy, audit, projection, and connector path for Northstar.' {
+          #zone_gateway
+          metadata {
+            owner 'zone2'
+            maturity 'implemented'
+            verification 'automated'
+            evidence 'zone2:examples/integration-definition-seeds/northstar.seed.json'
+            constraint_1 'Cannot execute unadmitted work or serve the NHS integration.'
+          }
+        }
+      }
+    }
+  }
+
+  edge -> gateway 'Invokes governed capabilities through the published interface' {
+    technology 'MCP'
+    metadata {
+      owner 'root'
+      maturity 'implemented'
+      verification 'source'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+    }
+  }
+
+  gateway -> enterprise 'Executes admitted work through the Enterprise Connector Boundary' {
+    metadata {
+      owner 'root'
+      maturity 'implemented'
+      verification 'source'
+      evidence 'root:docs/system-map.md'
+    }
+  }
+
+  edge.runtime.mcp_client -> gateway.ingress.mcp_server 'MCP: discovery, invocation, confirmation, and App continuation' {
+    technology 'MCP'
+    metadata {
+      owner 'root'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+    }
+  }
+
+  gateway.ingress.mcp_server -> gateway.ingress.authentication 'Authenticates the caller' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.ingress.authentication -> gateway.governance.policy 'Requests deterministic admission' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.policy -> gateway.governance.confirmation 'May require explicit confirmation' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.policy -> gateway.governance.denied_outcome 'Denies the invocation before connector execution' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.confirmation -> gateway.governance.audit 'Records confirmation lifecycle changes' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.confirmation -> gateway.execution.orchestrator 'Resumes a valid confirmed invocation' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.policy -> gateway.execution.orchestrator 'Admits a bounded invocation' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.policy -> gateway.governance.audit 'Records every allow, confirmation, or deny decision' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.governance.denied_outcome -> gateway.governance.audit 'Records the denied outcome' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.definitions.source -> gateway.definitions.compiler 'Compiles and validates' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.definitions.compiler -> gateway.definitions.active_snapshot 'Publishes an immutable snapshot for explicit activation' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.definitions.active_snapshot -> gateway.definitions.catalogue 'Publishes only configured capabilities' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.definitions.catalogue -> gateway.ingress.mcp_server 'Supplies the MCP capability catalogue' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.execution.orchestrator -> gateway.execution.connector_boundary 'Invokes the configured enterprise connector' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:src'
+    }
+  }
+
+  gateway.execution.orchestrator -> gateway.execution.reasoning_connector 'Invokes bounded reasoning when admitted' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/flows/reasoning-escalation.md'
+    }
+  }
+
+  gateway.execution.reasoning_connector -> gateway.execution.connector_boundary 'Calls only disclosed connectors within the outer admitted invocation; no fresh policy decision' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/flows/reasoning-escalation.md'
+      limitation 'Autonomous real-model selection of a disclosed tool is not yet live-proven.'
+    }
+  }
+
+  gateway.execution.orchestrator -> gateway.projection.projector 'Sends the private governed outcome for projection' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+    }
+  }
+
+  gateway.projection.projector -> gateway.projection.model_observation 'Creates the compact model audience' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+    }
+  }
+
+  gateway.projection.projector -> gateway.projection.app_presentation 'Creates the authorised human audience' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+    }
+  }
+
+  gateway.projection.projector -> edge.runtime.mcp_client 'Returns only Model Observation, authorised App Presentation, and opaque lifecycle metadata' {
+    technology 'MCP'
+    metadata {
+      owner 'root'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+      limitation 'Governed Outcome, result, provenance, cursor, subject/source references, and internal targets never cross this boundary.'
+    }
+  }
+
+  edge.runtime.mcp_client -> gateway.deployments.nhs_gateway.mcp_endpoint 'Connects an NHS Edge profile to the process published MCP endpoint' {
+    technology 'MCP'
+    metadata {
+      owner 'root'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:examples/integration-definition-seeds/nhs.seed.json'
+    }
+  }
+
+  edge.runtime.mcp_client -> gateway.deployments.northstar_gateway.mcp_endpoint 'Connects a Northstar Edge profile to the process published MCP endpoint' {
+    technology 'MCP'
+    metadata {
+      owner 'root'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:examples/integration-definition-seeds/northstar.seed.json'
+    }
+  }
+
+  gateway.deployments.nhs_gateway.mcp_endpoint -> gateway.deployments.nhs_gateway.governed_runtime 'Authenticates and deterministically governs the NHS invocation' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:examples/integration-definition-seeds/nhs.seed.json'
+    }
+  }
+
+  gateway.deployments.northstar_gateway.mcp_endpoint -> gateway.deployments.northstar_gateway.governed_runtime 'Authenticates and deterministically governs the Northstar invocation' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:examples/integration-definition-seeds/northstar.seed.json'
+    }
+  }
+
+  gateway.deployments.nhs_gateway.governed_runtime -> enterprise 'Executes admitted NHS work through the Enterprise Connector Boundary' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'source'
+      evidence 'root:docs/deployment-topology.md'
+    }
+  }
+
+  gateway.deployments.northstar_gateway.governed_runtime -> enterprise 'Executes admitted Northstar work through the Enterprise Connector Boundary' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'source'
+      evidence 'root:docs/deployment-topology.md'
+    }
+  }
+
+  gateway.deployments.nhs_gateway -> gateway.definitions.active_snapshot 'Starts with exactly one NHS snapshot' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:examples/integration-definition-seeds/nhs.seed.json'
+    }
+  }
+
+  gateway.deployments.northstar_gateway -> gateway.definitions.active_snapshot 'Starts with exactly one Northstar snapshot' {
+    metadata {
+      owner 'zone2'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone2:examples/integration-definition-seeds/northstar.seed.json'
+    }
+  }
+}

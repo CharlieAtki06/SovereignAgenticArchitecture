@@ -7,7 +7,7 @@ explains ownership, safe profile selection, and how to verify governed access.
 > secret is `dev-secret`, and TLS is relaxed. None of these values are production-safe.
 
 For realm and compose internals, see Zone 2's
-[Keycloak profile guide](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/keycloak.md).
+[Keycloak profile guide](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/keycloak.md).
 For domain-level acceptance flows, use [NHS Care](demos/nhs-care.md) and
 [Northstar Infrastructure Operations](demos/northstar-infrastructure-operations.md).
 
@@ -118,7 +118,8 @@ make demo-reset-infrastructure      # deletes only Infrastructure profile contai
 Keycloak imports a realm only into a fresh profile database. After changing
 `keycloak/realms/<profile>.json`, run that profile's `demo-reset-*` then
 `demo-up-*`. Do not make console edits: the JSON export is the reviewable,
-repeatable source of truth. The local console at <http://localhost:8080>
+repeatable source of truth. The local console at
+[http://localhost:8080](http://localhost:8080)
 (`admin` / `admin`) is inspection-only.
 
 ### Desktop lifecycle
@@ -268,13 +269,13 @@ this order. None duplicates another; each covers one layer.
 
 | What | Where |
 |---|---|
-| Why purpose is derived from the token, not a tool parameter | Zone 2: [ADR-0017](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0017-purpose-is-identity-derived-not-a-tool-parameter.md) |
-| Full three-axis governance design (the main auth ADR) | Zone 2: [ADR-0019](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0019-oidc-identity-entitlement-and-three-axis-governance.md) |
-| Why Axes 1+2 are enforced at discovery time | Zone 2: [ADR-0021](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0021-two-axis-tool-visibility-filtering-at-discovery-time.md) |
-| Caller-zone-aware field stripping and disclosure | Zone 2: [ADR-0026](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/adr/0026-zone-identity-governance.md) |
-| Realm-as-code, profile catalogue, token verification wiring | Zone 2: [docs/dev/keycloak.md](../../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo/docs/dev/keycloak.md) |
+| Why purpose is derived from the token, not a tool parameter | Zone 2: [ADR-0017](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0017-purpose-is-identity-derived-not-a-tool-parameter.md) |
+| Full three-axis governance design (the main auth ADR) | Zone 2: [ADR-0019](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0019-oidc-identity-entitlement-and-three-axis-governance.md) |
+| Why Axes 1+2 are enforced at discovery time | Zone 2: [ADR-0021](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0021-two-axis-tool-visibility-filtering-at-discovery-time.md) |
+| Caller-zone-aware field stripping and disclosure | Zone 2: [ADR-0026](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/adr/0026-zone-identity-governance.md) |
+| Realm-as-code, profile catalogue, token verification wiring | Zone 2: [docs/dev/keycloak.md](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneTwo/blob/0ad691dfbb9095d7b2d786a53ef22afdd7a1e9c6/docs/dev/keycloak.md) |
 | NHS seed identities, entitlement matrix, allow/deny acceptance tests | Root: [docs/demos/nhs-care.md](demos/nhs-care.md) |
-| Why Zone 1 is purpose-free and credentials never enter the model | Zone 1: [ADR-0016](../../SovereignAgenticArchitectureZoneOne/docs/adr/0016-purpose-is-identity-derived-zone-1-is-purpose-free.md), [ADR-0018](../../SovereignAgenticArchitectureZoneOne/docs/adr/0018-secure-credential-handle-for-user-tokens.md) |
+| Why Zone 1 is purpose-free and credentials never enter the model | Zone 1: [ADR-0016](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/10419805f78af9a22234e4cd1a504494ec6895b4/docs/adr/0016-purpose-is-identity-derived-zone-1-is-purpose-free.md), [ADR-0018](https://github.com/CharlieAtki06/SovereignAgenticArchitectureZoneOne/blob/10419805f78af9a22234e4cd1a504494ec6895b4/docs/adr/0018-secure-credential-handle-for-user-tokens.md) |
 
 ### Browser login mechanics
 

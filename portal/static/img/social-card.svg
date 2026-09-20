@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#101827"/>
+  <text x="90" y="210" fill="#f4f7fb" font-family="system-ui,sans-serif" font-size="66" font-weight="600">Sovereign Agentic Architecture</text>
+  <text x="90" y="285" fill="#aab7cc" font-family="system-ui,sans-serif" font-size="34">Local agency · deterministic governance · deliberate disclosure</text>
+  <circle cx="270" cy="430" r="64" fill="#4f8cff"/>
+  <circle cx="600" cy="430" r="64" fill="#e59a3a"/>
+  <circle cx="930" cy="430" r="64" fill="#8d73d6"/>
+  <path d="M334 430h202M664 430h202" stroke="#dce5f4" stroke-width="12"/>
+  <text x="270" y="535" text-anchor="middle" fill="#dce5f4" font-family="system-ui,sans-serif" font-size="28">Edge</text>
+  <text x="600" y="535" text-anchor="middle" fill="#dce5f4" font-family="system-ui,sans-serif" font-size="28">Governance Gateway</text>
+  <text x="930" y="535" text-anchor="middle" fill="#dce5f4" font-family="system-ui,sans-serif" font-size="28">Enterprise</text>
+</svg>

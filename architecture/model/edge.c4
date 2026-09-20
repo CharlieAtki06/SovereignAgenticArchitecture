@@ -1,0 +1,259 @@
+model {
+  edge = zone 'Edge — Zone 1' 'The trust and deployment zone on or near the user device.' {
+    #zone_edge
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'source'
+      evidence 'root:docs/system-map.md'
+      constraint_1 'Cannot access enterprise reasoning or Systems of Record directly.'
+      constraint_2 'Cannot cross into the Governance Gateway except through its published MCP interface.'
+    }
+
+    experiences = area 'Edge Experiences' 'Interchangeable user-facing clients that consume the Edge Runtime contract.' {
+      #zone_edge
+      metadata {
+        owner 'zone1'
+        maturity 'implemented'
+        verification 'source'
+        evidence 'root:docs/system-map.md'
+        constraint_1 'Cannot bypass the Edge Runtime to call the Gateway or enterprise resources directly.'
+      }
+
+      desktop = experience 'Tauri Desktop' 'Reference desktop experience and sandboxed Prefab surface.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'live'
+          evidence 'zone1:desktop/src-tauri/tauri.conf.json'
+          constraint_1 'Cannot access enterprise resources or Gateway internals directly.'
+        }
+      }
+
+      cli = experience 'CLI / TUI' 'Engineering and diagnostic experiences over the same runtime boundary.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:runtime/src/zone1'
+          constraint_1 'Cannot bypass the governed MCP client for enterprise work.'
+        }
+      }
+
+      ios = experience 'iOS App' 'Narrow native prototype for mobile integration.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'prototype'
+          verification 'source'
+          evidence 'zone1:apple/ZoneOneAppleEdge.swiftpm/Sources/ZoneOneAppleEdge/App/ZoneOneAppleEdgeApp.swift'
+          limitation 'A complete app-originated real-Zone-2 round trip is not yet live-proven.'
+          constraint_1 'Cannot access enterprise resources without an Edge Runtime and the governed Gateway.'
+        }
+      }
+
+      embedded_web = experience 'Embedded NHS Web App' 'Planned external host integration using the same governed Gateway.' {
+        #zone_edge
+        metadata {
+          owner 'external'
+          maturity 'planned'
+          verification 'design'
+          evidence 'root:docs/deployment-topology.md'
+          limitation 'The external web application is not checked into this workspace.'
+          constraint_1 'Cannot connect to enterprise resources or Gateway internals directly.'
+        }
+      }
+    }
+
+    runtime = area 'Edge Runtime' 'Local orchestration, model execution, MCP consumption, checkpointing, and App hosting.' {
+      #zone_edge
+      metadata {
+        owner 'zone1'
+        maturity 'implemented'
+        verification 'automated'
+        evidence 'zone1:runtime/src/zone1'
+        constraint_1 'Cannot reproduce Gateway policy or access enterprise resources directly.'
+      }
+
+      ui_adapter = component 'Experience Adapter' 'Stable host-facing interface for every Edge Experience.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'source'
+          evidence 'zone1:runtime/src/zone1'
+          constraint_1 'Cannot make policy decisions or invoke enterprise connectors.'
+        }
+      }
+
+      local_model = component 'Local Function-calling Model' 'Selects model-visible capabilities from the published catalogue.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:runtime/src/zone1'
+          limitation 'llama.cpp process management and sovereign hardening remain incomplete.'
+          constraint_1 'Cannot discover host-only App actions or contact enterprise resources directly.'
+        }
+      }
+
+      orchestration = component 'LangGraph Orchestration' 'Runs the local interaction graph and resumes governed continuations.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:runtime/src/zone1/application/handle_interaction.py'
+          constraint_1 'Cannot call Gateway internals or enterprise resources directly.'
+        }
+      }
+
+      capability_catalogue = component 'Capability Catalogue' 'Model-visible capability descriptions discovered from the Gateway.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:runtime/src/zone1'
+          constraint_1 'Cannot contain host-only App actions or capabilities withheld by the Gateway.'
+        }
+      }
+
+      mcp_client = component 'Governed MCP Client' 'The only Zone 1 interface to Zone 2.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:runtime/src/zone1'
+          constraint_1 'Cannot bypass the published MCP interface or execute Gateway policy locally.'
+        }
+      }
+
+      checkpoint_store = component 'Edge Checkpoint Store' 'Persists local orchestration state; not an Integration Snapshot.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:runtime/src/zone1'
+          constraint_1 'Cannot configure a Gateway deployment or replace an Integration Snapshot.'
+        }
+      }
+
+      app_host = component 'Sandboxed App Host' 'Renders authorised App Presentation and owns host-only actions.' {
+        #zone_edge
+        metadata {
+          owner 'zone1'
+          maturity 'implemented'
+          verification 'automated'
+          evidence 'zone1:desktop/src'
+          constraint_1 'Cannot expose host-only actions as model-discoverable tools.'
+        }
+      }
+    }
+  }
+
+  edge.experiences.desktop -> edge.runtime.ui_adapter 'Uses the Edge Runtime interface' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'live'
+      evidence 'zone1:desktop/src-tauri/tauri.conf.json'
+    }
+  }
+
+  edge.experiences.cli -> edge.runtime.ui_adapter 'Uses the Edge Runtime interface' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:runtime/src/zone1'
+    }
+  }
+
+  edge.experiences.ios -> edge.runtime.ui_adapter 'Targets the Edge Runtime interface' {
+    metadata {
+      owner 'zone1'
+      maturity 'prototype'
+      verification 'source'
+      evidence 'zone1:apple/ZoneOneAppleEdge.swiftpm/Sources/ZoneOneAppleEdge/App/ZoneOneAppleEdgeApp.swift'
+      limitation 'The mobile adapter is intentionally narrower than the desktop host.'
+    }
+  }
+
+  edge.experiences.embedded_web -> edge.runtime.ui_adapter 'Will integrate through an Edge deployment profile' {
+    metadata {
+      owner 'external'
+      maturity 'planned'
+      verification 'design'
+      evidence 'root:docs/deployment-topology.md'
+    }
+  }
+
+  edge.runtime.ui_adapter -> edge.runtime.orchestration 'Starts or resumes an interaction' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:runtime/src/zone1/application/handle_interaction.py'
+    }
+  }
+
+  edge.runtime.orchestration -> edge.runtime.local_model 'Requests local capability selection' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:runtime/src/zone1'
+    }
+  }
+
+  edge.runtime.local_model -> edge.runtime.capability_catalogue 'Reads model-visible tools only' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:runtime/src/zone1'
+    }
+  }
+
+  edge.runtime.orchestration -> edge.runtime.mcp_client 'Invokes a selected capability' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:runtime/src/zone1/application/handle_interaction.py'
+    }
+  }
+
+  edge.runtime.orchestration -> edge.runtime.checkpoint_store 'Persists local graph state' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:runtime/src/zone1'
+    }
+  }
+
+  edge.runtime.ui_adapter -> edge.runtime.app_host 'Presents an authorised App surface' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'zone1:desktop/src'
+    }
+  }
+
+  edge.runtime.app_host -> edge.runtime.mcp_client 'Continues a host-only App action; never exposes it to the model catalogue' {
+    metadata {
+      owner 'zone1'
+      maturity 'implemented'
+      verification 'automated'
+      evidence 'root:docs/data-boundary-and-projection-contract.md'
+    }
+  }
+}

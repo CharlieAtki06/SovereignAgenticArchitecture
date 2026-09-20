@@ -1,0 +1,196 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(5rem, 10vw, 9rem) max(1.5rem, calc((100vw - 1240px) / 2));
+  background:
+    linear-gradient(135deg, rgb(8 20 36 / 98%), rgb(17 30 49 / 96%)),
+    radial-gradient(circle at 80% 20%, rgb(50 205 182 / 18%), transparent 34%);
+  color: #f7fbff;
+}
+
+.hero::before {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgb(255 255 255 / 4%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px);
+  background-size: 48px 48px;
+  content: '';
+  mask-image: linear-gradient(to bottom, black, transparent 92%);
+  pointer-events: none;
+}
+
+.heroGlow {
+  position: absolute;
+  top: -16rem;
+  right: -12rem;
+  width: 42rem;
+  height: 42rem;
+  border-radius: 50%;
+  background: rgb(43 210 181 / 18%);
+  filter: blur(90px);
+}
+
+.heroContent,
+.heroMap {
+  position: relative;
+  z-index: 1;
+}
+
+.heroContent {
+  max-width: 860px;
+}
+
+.kicker {
+  margin: 0 0 1rem;
+  color: var(--portal-accent-bright);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 18ch;
+  margin: 0;
+  color: #fff;
+  font-size: clamp(3rem, 7vw, 6.6rem);
+  font-weight: 720;
+  letter-spacing: -0.06em;
+  line-height: 0.94;
+}
+
+.lede {
+  max-width: 720px;
+  margin: 2rem 0 0;
+  color: #c8d5e3;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.65;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 2.5rem;
+}
+
+.heroMap {
+  margin-top: clamp(4rem, 8vw, 7rem);
+}
+
+.heroMap > * {
+  margin: 0;
+}
+
+.journeys {
+  padding: clamp(5rem, 9vw, 8rem) max(1.5rem, calc((100vw - 1160px) / 2));
+}
+
+.sectionHeading {
+  max-width: 700px;
+}
+
+.sectionHeading .kicker {
+  color: var(--portal-accent);
+}
+
+.sectionHeading h2 {
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  letter-spacing: -0.04em;
+}
+
+.journeyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.journeyCard {
+  min-height: 22rem;
+  padding: clamp(1.8rem, 4vw, 3rem);
+  border: 1px solid var(--portal-line);
+  border-radius: 1.5rem;
+  background: var(--portal-panel);
+  box-shadow: var(--portal-shadow);
+  color: var(--ifm-font-color-base);
+  text-decoration: none;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.journeyCard:hover {
+  border-color: var(--portal-accent);
+  box-shadow: 0 1.5rem 4rem rgb(18 37 58 / 14%);
+  color: var(--ifm-font-color-base);
+  text-decoration: none;
+  transform: translateY(-4px);
+}
+
+.cardIndex {
+  color: var(--portal-accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.journeyCard h3 {
+  max-width: 13ch;
+  margin: 4rem 0 1rem;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.journeyCard p {
+  max-width: 50ch;
+  color: var(--portal-muted);
+}
+
+.journeyCard strong {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: var(--portal-accent);
+}
+
+.principleStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--portal-line);
+  background: var(--portal-soft);
+}
+
+.principleStrip > div {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 9rem;
+  place-content: center;
+  padding: 1.5rem;
+  border-right: 1px solid var(--portal-line);
+  text-align: center;
+}
+
+.principleStrip > div:last-child {
+  border-right: 0;
+}
+
+.principleStrip span {
+  color: var(--portal-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 800px) {
+  .journeyGrid,
+  .principleStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .journeyCard {
+    min-height: 18rem;
+  }
+
+  .principleStrip > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--portal-line);
+  }
+}

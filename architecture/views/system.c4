@@ -1,0 +1,91 @@
+views {
+  global style zone_identity
+
+  view landscape {
+    title 'Sovereign Agentic Architecture — system landscape'
+    description 'Three trust/deployment zones with a single governed boundary between Edge and enterprise resources.'
+    include *
+    autoLayout LeftRight
+  }
+
+  view client_landscape {
+    title 'Many Edge Experiences, one governed architecture'
+    include edge.experiences
+    include edge.experiences.desktop
+    include edge.experiences.cli
+    include edge.experiences.ios
+    include edge.experiences.embedded_web
+    include edge.runtime.ui_adapter
+    include edge.runtime.mcp_client
+    include gateway.ingress.mcp_server
+    autoLayout LeftRight
+  }
+
+  view edge_runtime of edge {
+    title 'Edge Runtime and experiences'
+    include edge.*
+    autoLayout LeftRight
+  }
+
+  view gateway_runtime of gateway {
+    title 'Governance Gateway internals'
+    include gateway.*
+    autoLayout LeftRight
+  }
+
+  view enterprise_resources of enterprise {
+    title 'Enterprise Intelligence & Resources'
+    include gateway.execution.connector_boundary
+    include gateway.execution.reasoning_connector
+    include enterprise.*
+    autoLayout LeftRight
+  }
+
+  view deployment_variants {
+    title 'Reuse Edge Experiences without bypassing governance'
+    description 'Desktop is implemented, iOS is a prototype, and embedded web is planned. Every experience reuses the Edge Runtime and reaches a separately configured NHS or Northstar Gateway process over MCP; each process activates exactly one integration.'
+    include edge.experiences.desktop
+    include edge.experiences.ios
+    include edge.experiences.embedded_web
+    include edge.runtime.ui_adapter
+    include edge.runtime.orchestration
+    include edge.runtime.mcp_client
+    include gateway.deployments
+    include gateway.deployments.nhs_gateway
+    include gateway.deployments.nhs_gateway.mcp_endpoint
+    include gateway.deployments.nhs_gateway.governed_runtime
+    include gateway.deployments.northstar_gateway
+    include gateway.deployments.northstar_gateway.mcp_endpoint
+    include gateway.deployments.northstar_gateway.governed_runtime
+    include enterprise
+    autoLayout LeftRight
+  }
+
+  view deployment_reuse_overview {
+    title 'Reuse the governed pattern without sharing one Gateway process'
+    description 'Desktop is implemented, iOS is a prototype, and embedded web is planned. Every experience reuses the Edge Runtime; NHS and Northstar then run as separate Gateway processes with exactly one active integration each before reaching Enterprise.'
+    include edge.experiences
+    include edge.runtime
+    include gateway.deployments.nhs_gateway
+    include gateway.deployments.northstar_gateway
+    include enterprise
+    autoLayout LeftRight 100 80
+  }
+
+  dynamic view deployment_reuse_walkthrough {
+    title 'Reuse the governed pattern across experiences and deployments'
+    description 'Walk through how several Edge Experiences reuse the same local runtime contract, then select a dedicated Gateway deployment over MCP. NHS and Northstar are separate processes with one active integration each; neither is a shared process that dynamically multiplexes use cases.'
+    edge.experiences.desktop -> edge.runtime.ui_adapter '1. The implemented desktop uses the Edge Runtime interface'
+    edge.experiences.ios -> edge.runtime.ui_adapter '2. The iOS prototype targets the same interface'
+    edge.experiences.embedded_web -> edge.runtime.ui_adapter '3. The planned embedded experience follows the same boundary'
+    edge.runtime.ui_adapter -> edge.runtime.orchestration '4. Each experience enters the local orchestration path'
+    edge.runtime.orchestration -> edge.runtime.mcp_client '5. The Edge Runtime invokes only through its governed MCP client'
+    edge.runtime.mcp_client -> gateway.deployments.nhs_gateway.mcp_endpoint '6. An NHS profile selects the dedicated NHS Gateway process'
+    gateway.deployments.nhs_gateway.mcp_endpoint -> gateway.deployments.nhs_gateway.governed_runtime '7. That process applies NHS authentication, policy, audit, and projection'
+    gateway.deployments.nhs_gateway.governed_runtime -> enterprise '8. Admitted NHS work reaches Enterprise through its connector boundary'
+    edge.runtime.mcp_client -> gateway.deployments.northstar_gateway.mcp_endpoint '9. A Northstar profile instead selects a separate Gateway process'
+    gateway.deployments.northstar_gateway.mcp_endpoint -> gateway.deployments.northstar_gateway.governed_runtime '10. That process applies its own governed runtime configuration'
+    gateway.deployments.northstar_gateway.governed_runtime -> enterprise '11. Admitted Northstar work reaches Enterprise through its connector boundary'
+    autoLayout LeftRight
+  }
+}
