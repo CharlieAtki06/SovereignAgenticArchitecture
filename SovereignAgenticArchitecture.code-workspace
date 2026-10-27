@@ -11,6 +11,10 @@
     {
       "name": "Governance Gateway — Zone 2",
       "path": "../Sovereign-Agentic-Architecture/SovereignAgenticArchitectureZoneTwo"
+    },
+    {
+      "name": "Infrastructure — GCP demo deployment",
+      "path": "../SovereignAgenticArchitectureInfra"
     }
   ],
   "settings": {
