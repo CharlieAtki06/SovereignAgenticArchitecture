@@ -27,6 +27,17 @@ assert_contains desktop-rebuild-nhs "desktop-dev-governed DEPLOYMENT_POLICY=nhs"
 assert_contains desktop-reset-nhs "demo-reset-nhs"
 assert_contains desktop-reset-nhs "desktop-dev-governed DEPLOYMENT_POLICY=nhs"
 assert_contains desktop-up-infrastructure "DEPLOYMENT_POLICY=northstar-infrastructure"
+assert_contains demo-up-sovereign "demo-up-sovereign"
+assert_contains demo-down-sovereign "demo-down-sovereign"
+assert_contains demo-logs-sovereign "demo-logs-sovereign"
+assert_contains demo-reset-sovereign "demo-reset-sovereign"
+assert_contains desktop-up-sovereign "demo-up-sovereign"
+assert_contains desktop-up-sovereign "desktop-dev-cloud"
+assert_contains desktop-up-sovereign "ZONE1_OIDC_ISSUER=http://localhost:8080/realms/sovereign-demo"
+assert_contains desktop-up-sovereign "ZONE1_CAPABILITY_SERVER_URL=http://127.0.0.1:8000/mcp"
+assert_contains desktop-down-sovereign "demo-down-sovereign"
+assert_contains desktop-reset-sovereign "demo-reset-sovereign"
+assert_contains desktop-reset-sovereign "desktop-dev-cloud"
 assert_contains demo-worker-logs-nhs "demo-worker-logs-nhs"
 assert_contains demo-worker-logs-infrastructure "demo-worker-logs-infrastructure"
 assert_contains assert-no-container-edge "ps --format"
@@ -52,6 +63,8 @@ assert_zone2_lifecycle demo-up-nhs "--extra-service mock-fhir"
 assert_zone2_lifecycle demo-rebuild-nhs "--rebuild"
 assert_zone2_lifecycle demo-up-infrastructure "northstar-infrastructure-demo"
 assert_zone2_lifecycle demo-rebuild-infrastructure "--rebuild"
+assert_zone2_lifecycle demo-up-sovereign "realms/sovereign-demo"
+assert_zone2_lifecycle demo-up-sovereign "--provision-service tenants-provision"
 
 desktop_output=$(make -C "$root_dir" -n desktop-up-nhs)
 if [[ $desktop_output == *"zone1) up -d"* ]]; then
@@ -62,5 +75,11 @@ fi
 desktop_rebuild_output=$(make -C "$root_dir" -n desktop-rebuild-nhs)
 if [[ $desktop_rebuild_output == *"zone1) up -d"* ]]; then
   echo "desktop-rebuild-nhs must not start the containerised Zone 1 edge" >&2
+  exit 1
+fi
+
+desktop_sovereign_output=$(make -C "$root_dir" -n desktop-up-sovereign)
+if [[ $desktop_sovereign_output == *"zone1) up -d"* ]]; then
+  echo "desktop-up-sovereign must not start the containerised Zone 1 edge" >&2
   exit 1
 fi

@@ -25,7 +25,8 @@ The lifecycle is:
 5. atomically install one process-wide catalogue generation.
 
 Activation is not per request and is not a routing mechanism between use cases.
-A running Governance Gateway serves one configured integration. The current
+A running Governance Gateway serves one integration per tenant; see
+[One Zone 2, several tenants](multi-tenant.md). The current
 runtime still defaults to legacy-module registration; active-snapshot mode is an
 implemented, explicit deployment choice.
 

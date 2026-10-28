@@ -29,8 +29,15 @@ ZONE1 := $(COMPOSE) -f $(ZONE1_DIR)/docker-compose.yml
 ZONE2 := $(COMPOSE) -f $(ZONE2_DIR)/docker-compose.yml
 PORTAL_DIR := portal
 
+# The multi-tenant demo: one Zone 2 and one Keycloak realm for several organisations.
+# Both are fixed by the stack, so the desktop is built against them.
+SOVEREIGN_ISSUER := http://localhost:8080/realms/sovereign-demo
+SOVEREIGN_MCP_URL := http://127.0.0.1:8000/mcp
+
 .PHONY: help up down ps logs edge-logs zone1-up zone1-down zone1-rebuild zone2-up zone2-down \
         demo-up-nhs demo-down-nhs demo-rebuild-nhs demo-logs-nhs demo-worker-logs-nhs demo-reset-nhs \
+        demo-up-sovereign demo-down-sovereign demo-logs-sovereign demo-reset-sovereign \
+        desktop-up-sovereign desktop-down-sovereign desktop-reset-sovereign \
         demo-up-infrastructure demo-down-infrastructure demo-rebuild-infrastructure demo-logs-infrastructure demo-worker-logs-infrastructure demo-reset-infrastructure \
         desktop-up-nhs desktop-down-nhs desktop-rebuild-nhs desktop-reset-nhs desktop-up-infrastructure desktop-down-infrastructure \
         test-demo-orchestration docs-install docs-dev docs-build docs-check docs-evidence
@@ -82,6 +89,18 @@ demo-reset-nhs: ## Remove NHS demo containers and volumes (destructive)
 	-ZONE2_NETWORK=sovereign-zone2-nhs $(ZONE1) down
 	$(MAKE) -C $(ZONE2_DIR) demo-reset-nhs
 
+demo-up-sovereign: ## Bring up the multi-tenant demo (NHS and Northstar from one Zone 2 and one realm); no desktop
+	$(MAKE) -C $(ZONE2_DIR) demo-up-sovereign
+
+demo-down-sovereign: ## Stop the multi-tenant demo
+	$(MAKE) -C $(ZONE2_DIR) demo-down-sovereign
+
+demo-logs-sovereign: ## Tail multi-tenant governed API logs
+	$(MAKE) -C $(ZONE2_DIR) demo-logs-sovereign
+
+demo-reset-sovereign: ## Remove multi-tenant demo containers and volumes (destructive)
+	$(MAKE) -C $(ZONE2_DIR) demo-reset-sovereign
+
 demo-up-infrastructure: ## Bring up the Northstar infrastructure demo and edge
 	$(MAKE) -C $(ZONE2_DIR) demo-up-infrastructure
 	ZONE2_NETWORK=sovereign-zone2-infrastructure $(ZONE1) up -d
@@ -128,6 +147,20 @@ desktop-up-infrastructure: assert-no-container-edge ## Start Northstar services 
 
 desktop-down-infrastructure: ## Stop Northstar services started for the desktop path
 	$(MAKE) -C $(ZONE2_DIR) demo-down-infrastructure
+
+# One command for the multi-tenant path: start the stack, then launch the GENERIC desktop (a
+# neutral brand until sign-in). Which brand and tools appear comes from the user's token.
+# Stop any other demo first (`make demo-down-nhs`): they share the standard local ports.
+desktop-up-sovereign: assert-no-container-edge ## Start the multi-tenant Zone 2 stack and launch the generic desktop
+	$(MAKE) -C $(ZONE2_DIR) demo-up-sovereign
+	$(MAKE) -C $(ZONE1_DIR) desktop-dev-cloud ZONE1_OIDC_ISSUER=$(SOVEREIGN_ISSUER) ZONE1_CAPABILITY_SERVER_URL=$(SOVEREIGN_MCP_URL)
+
+desktop-down-sovereign: ## Stop the multi-tenant services started for the desktop path
+	$(MAKE) -C $(ZONE2_DIR) demo-down-sovereign
+
+desktop-reset-sovereign: assert-no-container-edge ## Reset the multi-tenant synthetic state and relaunch the desktop
+	$(MAKE) -C $(ZONE2_DIR) demo-reset-sovereign
+	$(MAKE) desktop-up-sovereign
 
 assert-no-container-edge:
 	@if $(CONTAINER_ENGINE) ps --format '{{.Names}}' 2>/dev/null | grep -Eq '(^|[_-])zone1-edge([_-]|$$)'; then \
