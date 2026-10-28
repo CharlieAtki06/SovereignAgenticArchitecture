@@ -148,6 +148,27 @@ which runs on llama.cpp.
 | Local compose | local Ollama on the host | `ZONE2_REASONING_PROVIDER=local`, model `gemma4:e4b-it-q4_K_M` (default in `compose.demos/sovereign-demo.yml`) |
 | Google Cloud | Gemini API with an API key; Gemma and Gemini models both work | `TF_VAR_reasoning_model` (for example `gemma-4-31b-it`) and `TF_VAR_gemini_api_key`; off when no model is named |
 
+### Reasoning through Google from your laptop
+
+The local stack uses Ollama unless you switch it. Two settings choose Google, and a third carries the
+key. Set them in the shell that runs `make desktop-up-sovereign`; they pass straight through.
+
+| Setting | Value | Meaning |
+|---|---|---|
+| `ZONE2_REASONING_PROVIDER` | `google_ai` | Use the Gemini API instead of Ollama. Default `local`. |
+| `ZONE2_REASONING_MODEL` | for example `gemma-4-31b-it` | Which Google model. Default is the local `gemma4:e4b-it-q4_K_M`. |
+| `ZONE2_REASONING_API_KEY` | the key | Secret; required with `google_ai`, never put in a file. |
+
+```sh
+ZONE2_REASONING_PROVIDER=google_ai ZONE2_REASONING_MODEL=gemma-4-31b-it \
+  ZONE2_REASONING_API_KEY="$TF_VAR_gemini_api_key" make desktop-up-sovereign
+```
+
+With no key, Zone 2 refuses to start rather than failing on the first call. Only Zone 2's reasoning
+step goes to Google; the desktop's own model stays on-device. The data is synthetic, but the
+reasoning context package does leave your machine in this mode. Return to local by running the
+command again without the three settings.
+
 The key is the one credential the stack cannot generate: a person creates it in Google AI Studio.
 It is written once into Secret Manager as `sov-gemini-api-key` and read by Zone 2 as
 `ZONE2_REASONING_API_KEY`. Zone 2 refuses to start the `google_ai` provider without a model and a
