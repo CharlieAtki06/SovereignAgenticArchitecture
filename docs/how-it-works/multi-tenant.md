@@ -139,9 +139,13 @@ A contract test keeps the older single-tenant realm files from drifting from thi
 `zone3_disabled` unless Zone 2 has a reasoning provider. The Zone 1 desktop's own model is separate
 and stays on local Ollama.
 
+The reasoning step asks the model for structured output. Ollama's MLX runner (the plain
+`gemma4:e4b` build on Apple Silicon) answers 501 to that, so the local default is the GGUF build,
+which runs on llama.cpp.
+
 | Where | Provider | Setting |
 |---|---|---|
-| Local compose | local Ollama on the host | `ZONE2_REASONING_PROVIDER=local`, model `gemma4:e4b` (default in `compose.demos/sovereign-demo.yml`) |
+| Local compose | local Ollama on the host | `ZONE2_REASONING_PROVIDER=local`, model `gemma4:e4b-it-q4_K_M` (default in `compose.demos/sovereign-demo.yml`) |
 | Google Cloud | Gemini API with an API key | `TF_VAR_reasoning_model` and `TF_VAR_gemini_api_key`; off when no model is named |
 
 The key is the one credential the stack cannot generate: a person creates it in Google AI Studio.
