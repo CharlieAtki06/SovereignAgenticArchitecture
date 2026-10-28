@@ -146,7 +146,29 @@ which runs on llama.cpp.
 | Where | Provider | Setting |
 |---|---|---|
 | Local compose | local Ollama on the host | `ZONE2_REASONING_PROVIDER=local`, model `gemma4:e4b-it-q4_K_M` (default in `compose.demos/sovereign-demo.yml`) |
-| Google Cloud | Gemini API with an API key | `TF_VAR_reasoning_model` and `TF_VAR_gemini_api_key`; off when no model is named |
+| Google Cloud | Gemini API with an API key; Gemma and Gemini models both work | `TF_VAR_reasoning_model` (for example `gemma-4-31b-it`) and `TF_VAR_gemini_api_key`; off when no model is named |
+
+### Switching Zone 2's reasoning between Ollama and Google
+
+Zone 1's model stays on-device either way. These two commands differ only in the model behind
+Zone 2's reasoning step. Run either to switch; each recreates the API and worker.
+
+| Command | Zone 1 model | Zone 2 reasoning |
+|---|---|---|
+| `make desktop-up-sovereign` | on-device Ollama | local Ollama, `gemma4:e4b-it-q4_K_M` |
+| `make desktop-up-sovereign-google` | on-device Ollama | Gemini API, `gemma-4-31b-it` |
+
+The Google command reads the key from `ZONE2_REASONING_API_KEY`, or else from `TF_VAR_gemini_api_key`
+in the infrastructure repository's `demo.env`, and stops with a message if there is none. Change the
+model with `SOVEREIGN_GOOGLE_MODEL=gemini-2.5-flash`. Underneath they set three Zone 2 settings:
+`ZONE2_REASONING_PROVIDER` (`local` or `google_ai`), `ZONE2_REASONING_MODEL` and the secret
+`ZONE2_REASONING_API_KEY`. With `google_ai` and no key Zone 2 refuses to start rather than failing on
+the first call.
+
+The two models have different jobs. The desktop's model is Zone 1. The model chosen here is Zone 2's
+reasoning step (Zone 3), reached only through the governance gateway, and it receives only what the
+tool's reasoning disclosure allows. `google_ai` changes which model sits behind that step, not the
+path to it.
 
 The key is the one credential the stack cannot generate: a person creates it in Google AI Studio.
 It is written once into Secret Manager as `sov-gemini-api-key` and read by Zone 2 as

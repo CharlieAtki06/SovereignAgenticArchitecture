@@ -34,10 +34,16 @@ PORTAL_DIR := portal
 SOVEREIGN_ISSUER := http://localhost:8080/realms/sovereign-demo
 SOVEREIGN_MCP_URL := http://127.0.0.1:8000/mcp
 
+# Zone 2's reasoning step on the Gemini API (a Google-hosted Gemma or Gemini model) while Zone 1's
+# model stays on-device. The key comes from ZONE2_REASONING_API_KEY, else from the infrastructure
+# repository's demo.env, where the deployed stack already reads it.
+INFRA_DIR := ../SovereignAgenticArchitectureInfra
+SOVEREIGN_GOOGLE_MODEL ?= gemma-4-31b-it
+
 .PHONY: help up down ps logs edge-logs zone1-up zone1-down zone1-rebuild zone2-up zone2-down \
         demo-up-nhs demo-down-nhs demo-rebuild-nhs demo-logs-nhs demo-worker-logs-nhs demo-reset-nhs \
         demo-up-sovereign demo-down-sovereign demo-logs-sovereign demo-reset-sovereign \
-        desktop-up-sovereign desktop-down-sovereign desktop-reset-sovereign \
+        desktop-up-sovereign desktop-up-sovereign-google desktop-down-sovereign desktop-reset-sovereign \
         demo-up-infrastructure demo-down-infrastructure demo-rebuild-infrastructure demo-logs-infrastructure demo-worker-logs-infrastructure demo-reset-infrastructure \
         desktop-up-nhs desktop-down-nhs desktop-rebuild-nhs desktop-reset-nhs desktop-up-infrastructure desktop-down-infrastructure \
         test-demo-orchestration docs-install docs-dev docs-build docs-check docs-evidence
@@ -154,6 +160,19 @@ desktop-down-infrastructure: ## Stop Northstar services started for the desktop 
 desktop-up-sovereign: assert-no-container-edge ## Start the multi-tenant Zone 2 stack and launch the generic desktop
 	$(MAKE) -C $(ZONE2_DIR) demo-up-sovereign
 	$(MAKE) -C $(ZONE1_DIR) desktop-dev-cloud ZONE1_OIDC_ISSUER=$(SOVEREIGN_ISSUER) ZONE1_CAPABILITY_SERVER_URL=$(SOVEREIGN_MCP_URL)
+
+desktop-up-sovereign-google: assert-no-container-edge ## As desktop-up-sovereign, but Zone 2 reasons through the Gemini API (set SOVEREIGN_GOOGLE_MODEL to change the model)
+	@key="$${ZONE2_REASONING_API_KEY:-}"; \
+	if [ -z "$$key" ] && [ -f $(INFRA_DIR)/demo.env ]; then \
+		key="$$(sed -n 's/^TF_VAR_gemini_api_key=//p' $(INFRA_DIR)/demo.env | head -n 1)"; \
+	fi; \
+	if [ -z "$$key" ]; then \
+		echo "No Gemini API key: set ZONE2_REASONING_API_KEY, or TF_VAR_gemini_api_key in $(INFRA_DIR)/demo.env." >&2; \
+		echo "For fully local reasoning run: make desktop-up-sovereign" >&2; \
+		exit 1; \
+	fi; \
+	ZONE2_REASONING_PROVIDER=google_ai ZONE2_REASONING_MODEL=$(SOVEREIGN_GOOGLE_MODEL) \
+		ZONE2_REASONING_API_KEY="$$key" $(MAKE) desktop-up-sovereign
 
 desktop-down-sovereign: ## Stop the multi-tenant services started for the desktop path
 	$(MAKE) -C $(ZONE2_DIR) demo-down-sovereign
