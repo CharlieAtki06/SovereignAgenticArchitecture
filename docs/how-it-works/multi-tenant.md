@@ -148,27 +148,27 @@ which runs on llama.cpp.
 | Local compose | local Ollama on the host | `ZONE2_REASONING_PROVIDER=local`, model `gemma4:e4b-it-q4_K_M` (default in `compose.demos/sovereign-demo.yml`) |
 | Google Cloud | Gemini API with an API key; Gemma and Gemini models both work | `TF_VAR_reasoning_model` (for example `gemma-4-31b-it`) and `TF_VAR_gemini_api_key`; off when no model is named |
 
-### Reasoning through Google from your laptop
+### Switching Zone 2's reasoning between Ollama and Google
 
-The local stack uses Ollama unless you switch it. Two settings choose Google, and a third carries the
-key. Set them in the shell that runs `make desktop-up-sovereign`; they pass straight through.
+Zone 1's model stays on-device either way. These two commands differ only in the model behind
+Zone 2's reasoning step. Run either to switch; each recreates the API and worker.
 
-| Setting | Value | Meaning |
+| Command | Zone 1 model | Zone 2 reasoning |
 |---|---|---|
-| `ZONE2_REASONING_PROVIDER` | `google_ai` | Use the Gemini API instead of Ollama. Default `local`. |
-| `ZONE2_REASONING_MODEL` | for example `gemma-4-31b-it` | Which Google model. Default is the local `gemma4:e4b-it-q4_K_M`. |
-| `ZONE2_REASONING_API_KEY` | the key | Secret; required with `google_ai`, never put in a file. |
+| `make desktop-up-sovereign` | on-device Ollama | local Ollama, `gemma4:e4b-it-q4_K_M` |
+| `make desktop-up-sovereign-google` | on-device Ollama | Gemini API, `gemma-4-31b-it` |
 
-```sh
-ZONE2_REASONING_PROVIDER=google_ai ZONE2_REASONING_MODEL=gemma-4-31b-it \
-  ZONE2_REASONING_API_KEY="$TF_VAR_gemini_api_key" make desktop-up-sovereign
-```
+The Google command reads the key from `ZONE2_REASONING_API_KEY`, or else from `TF_VAR_gemini_api_key`
+in the infrastructure repository's `demo.env`, and stops with a message if there is none. Change the
+model with `SOVEREIGN_GOOGLE_MODEL=gemini-2.5-flash`. Underneath they set three Zone 2 settings:
+`ZONE2_REASONING_PROVIDER` (`local` or `google_ai`), `ZONE2_REASONING_MODEL` and the secret
+`ZONE2_REASONING_API_KEY`. With `google_ai` and no key Zone 2 refuses to start rather than failing on
+the first call.
 
-With no key, Zone 2 refuses to start rather than failing on the first call. The two models have
-different jobs. The desktop's model is Zone 1 and is always on-device. The model chosen here is
-Zone 2's reasoning step (Zone 3), reached only through the governance gateway, and it receives only
-what the tool's reasoning disclosure allows. `google_ai` changes which model sits behind that step,
-not the path to it. Return to Ollama by running the command again without the three settings.
+The two models have different jobs. The desktop's model is Zone 1. The model chosen here is Zone 2's
+reasoning step (Zone 3), reached only through the governance gateway, and it receives only what the
+tool's reasoning disclosure allows. `google_ai` changes which model sits behind that step, not the
+path to it.
 
 The key is the one credential the stack cannot generate: a person creates it in Google AI Studio.
 It is written once into Secret Manager as `sov-gemini-api-key` and read by Zone 2 as
