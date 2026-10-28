@@ -146,7 +146,7 @@ which runs on llama.cpp.
 | Where | Provider | Setting |
 |---|---|---|
 | Local compose | local Ollama on the host | `ZONE2_REASONING_PROVIDER=local`, model `gemma4:e4b-it-q4_K_M` (default in `compose.demos/sovereign-demo.yml`) |
-| Google Cloud | Gemini API with an API key | `TF_VAR_reasoning_model` and `TF_VAR_gemini_api_key`; off when no model is named |
+| Google Cloud | Gemini API with an API key; Gemma and Gemini models both work | `TF_VAR_reasoning_model` (for example `gemma-4-31b-it`) and `TF_VAR_gemini_api_key`; off when no model is named |
 
 The key is the one credential the stack cannot generate: a person creates it in Google AI Studio.
 It is written once into Secret Manager as `sov-gemini-api-key` and read by Zone 2 as
