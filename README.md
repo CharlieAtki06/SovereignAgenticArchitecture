@@ -43,8 +43,8 @@ the pinned private revisions:
 make docs-evidence
 ```
 
-The supported application demo commands remain `make desktop-up-nhs` and
-`make desktop-up-infrastructure`; see the
+The supported application demo commands remain `make desktop-up-nhs`,
+`make desktop-up-infrastructure` and the multi-tenant `make desktop-up-sovereign`; see the
 [local demo runbook](docs/dev/local-demo-runbook.md) before using them.
 
 ## Repository ownership

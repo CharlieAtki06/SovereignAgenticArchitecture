@@ -14,15 +14,28 @@ Only one demo profile can use the standard local ports at a time.
 | NHS desktop (normal interactive path) | root workspace | `make desktop-up-nhs` |
 | NHS desktop after a realm-definition change | root workspace | `make desktop-reset-nhs` |
 | Northstar desktop (normal interactive path) | root workspace | `make desktop-up-infrastructure` |
+| **Both tenants from one Zone 2, with the generic desktop** | root workspace | `make desktop-up-sovereign` |
 | NHS headless edge + CLI path | root workspace | `make demo-up-nhs` |
 | Northstar headless edge + CLI path | root workspace | `make demo-up-infrastructure` |
-| Zone 2 services only | Zone 2 repository | `make demo-up-nhs` or `make demo-up-infrastructure` |
+| Zone 2 services only | Zone 2 repository | `make demo-up-nhs`, `make demo-up-infrastructure` or `make demo-up-sovereign` |
 | Desktop host only, for maintainers | Zone 1 repository | `make desktop-dev DEPLOYMENT_POLICY=nhs` or `DEPLOYMENT_POLICY=northstar-infrastructure` |
 
 `desktop-up-*` starts the selected Zone 2 profile and the desktop's **local**
 Zone 1 sidecar. `demo-up-*` starts the selected Zone 2 profile and the
 **containerised** Zone 1 edge. Do not start both for the same profile: that
 would create two edges competing for the same local services.
+
+## Multi-tenant: one Zone 2, the generic desktop
+
+`make desktop-up-sovereign` starts one Zone 2 serving two tenants behind one Keycloak realm, then
+launches the **generic** desktop. Stop any other demo first (`make demo-down-nhs`): they share the
+local ports. Sign in as `clinician-a` (NHS) or `operator-a` (Northstar) with the password `demo`;
+**Sign out** returns to the generic sign-in so you can switch. `make desktop-down-sovereign` stops
+the stack, `make desktop-reset-sovereign` wipes its data and starts again, and
+`make demo-up-sovereign` starts the stack without the desktop.
+
+How it works, the users, reasoning and adding a tenant:
+[One Zone 2, several tenants](../how-it-works/multi-tenant.md).
 
 ## NHS Care: first run
 
